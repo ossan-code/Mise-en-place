@@ -1198,24 +1198,68 @@ function renderDBThumbnails(meals, cat){
 function renderDiscoverList(meals, containerId, accentVar){
   const el = document.getElementById(containerId);
   if(!meals.length){el.innerHTML='<div class="empty-state"><div class="icon">🤷</div><p>No results. Try a different search.</p></div>';return;}
+  const isAI = accentVar === 'purple';
   el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;">'
     + meals.map(m=>{
         const sel = !!discoverSelected[m.id];
         const accent = 'var(--'+accentVar+')';
-        return `<div id="row-${m.id}" onclick="toggleDiscover('${m.id}')"
-          style="display:flex;gap:12px;align-items:center;background:var(--surface);border:1.5px solid ${sel?accent:'var(--border)'};border-radius:10px;padding:11px 14px;cursor:pointer;transition:all .15s;">
-          ${m.thumb ? `<img src="${m.thumb}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;" loading="lazy" onerror="this.style.display='none'">` :
-            `<div style="width:44px;height:44px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🤖</div>`}
-          <div style="flex:1;min-width:0;">
-            <div style="font-weight:600;color:${sel?accent:'var(--text)'};">${m.name}</div>
-            <div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${m.source_cat||m.category||''}</div>
-            <div style="font-size:11px;color:var(--text-soft);margin-top:3px;">🧺 ${(m.ingredients||[]).slice(0,4).join(', ')}${(m.ingredients||[]).length>4?'…':''}</div>
-            ${m.notes?`<div style="font-size:11px;color:var(--text-faint);margin-top:2px;font-style:italic;">${m.notes.slice(0,80)}</div>`:''}
+        // Build recipe steps HTML for AI meals
+        let recipeHtml = '';
+        if(isAI && m.recipe){
+          const steps = m.recipe.split('|').map(s=>s.trim()).filter(Boolean);
+          const hasUrl = m.source_url && m.source_url.startsWith('http');
+          const urlDomain = hasUrl ? (()=>{ try{ return new URL(m.source_url).hostname.replace('www.',''); }catch(e){ return m.source_url; } })() : '';
+          recipeHtml = `
+            <div id="recipe-${m.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);margin-bottom:6px;">Quick Recipe</div>
+              ${steps.map((s,i)=>`
+                <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:5px;">
+                  <div style="min-width:18px;height:18px;border-radius:50%;background:${accent};color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</div>
+                  <div style="font-size:12px;color:var(--text-soft);line-height:1.4;">${s}</div>
+                </div>`).join('')}
+              ${hasUrl ? `
+                <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
+                  <a href="${m.source_url}" target="_blank" rel="noopener noreferrer"
+                    onclick="event.stopPropagation();"
+                    style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--blue);text-decoration:none;padding:5px 10px;border:1px solid var(--blue);border-radius:6px;transition:all .15s;"
+                    onmouseover="this.style.background='rgba(77,166,255,0.12)'" onmouseout="this.style.background='transparent'">
+                    🔗 Full recipe on ${urlDomain} ↗
+                  </a>
+                </div>` : ''}
+            </div>`;
+        }
+        return `<div id="row-${m.id}"
+          style="background:var(--surface);border:1.5px solid ${sel?accent:'var(--border)'};border-radius:10px;padding:11px 14px;transition:all .15s;">
+          <div style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;" onclick="toggleDiscover('${m.id}')">
+            ${m.thumb
+              ? `<img src="${m.thumb}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;" loading="lazy" onerror="this.style.display='none'">`
+              : `<div style="width:44px;height:44px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🤖</div>`}
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;color:${sel?accent:'var(--text)'};">${m.name}</div>
+              <div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${m.source_cat||m.category||''}</div>
+              <div style="font-size:11px;color:var(--text-soft);margin-top:3px;">🧺 ${(m.ingredients||[]).slice(0,4).join(', ')}${(m.ingredients||[]).length>4?'…':''}</div>
+              ${m.notes?`<div style="font-size:11px;color:var(--text-faint);margin-top:3px;font-style:italic;">${m.notes}</div>`:''}
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+              <div id="check-${m.id}" style="font-size:20px;">${sel?'✅':'⬕'}</div>
+              ${isAI && m.recipe ? `<button onclick="event.stopPropagation();toggleRecipe('${m.id}')" id="recipe-btn-${m.id}"
+                style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;cursor:pointer;font-size:10px;color:var(--text-faint);white-space:nowrap;transition:all .15s;"
+                title="Show recipe">📋 Recipe</button>` : ''}
+            </div>
           </div>
-          <div id="check-${m.id}" style="font-size:20px;flex-shrink:0;">${sel?'✅':'⬕'}</div>
+          ${recipeHtml}
         </div>`;
       }).join('')
     + '</div>';
+}
+
+function toggleRecipe(id){
+  const el = document.getElementById('recipe-'+id);
+  const btn = document.getElementById('recipe-btn-'+id);
+  if(!el) return;
+  const open = el.style.display === 'none' || !el.style.display;
+  el.style.display = open ? 'block' : 'none';
+  if(btn){ btn.style.color = open ? 'var(--purple)' : 'var(--text-faint)'; btn.style.borderColor = open ? 'var(--purple)' : 'var(--border)'; }
 }
 
 // ── AI Suggestions (Groq — free, CORS-allowed) ────────────────
@@ -1262,9 +1306,11 @@ async function runAISuggestions(){
   const sysPrompt = `You are a culinary expert. Return ONLY a valid JSON array with no markdown and no explanation at all — just the raw JSON array.
 Each element must have exactly these fields:
 - "name": meal name string
-- "category": one-word category string  
-- "ingredients": array of ingredient name strings
-- "notes": one sentence description string
+- "category": one-word category string
+- "ingredients": array of ingredient name strings (just ingredient names, no quantities)
+- "notes": one sentence description of the dish
+- "recipe": short cooking method in 3-5 steps as a single string, each step separated by " | " (pipe character). Keep each step concise, max 15 words.
+- "source_url": if this is a well-known real dish that has a popular recipe on the web (e.g. on AllRecipes, BBC Good Food, Food Network, Serious Eats, NYT Cooking, or the dish's Wikipedia page), provide the most likely direct URL string. If you are not confident a real URL exists for this specific dish, return an empty string "". Do NOT invent URLs — only provide URLs you are highly confident are real and currently live.
 Return exactly ${count} meals.`;
 
   try{
@@ -1297,7 +1343,9 @@ Return exactly ${count} meals.`;
     const mapped = aiMeals.map((m,i)=>{
       const id = 'ai_'+Date.now()+'_'+i;
       const meal = {id, name:m.name, category:m.category, source_cat:m.category||'',
-                    ingredients:Array.isArray(m.ingredients)?m.ingredients:[], notes:m.notes||''};
+                    ingredients:Array.isArray(m.ingredients)?m.ingredients:[],
+                    notes:m.notes||'', recipe:m.recipe||'',
+                    source_url: (m.source_url||'').trim()};
       discoverMeals[id] = meal;
       return meal;
     });
@@ -1386,12 +1434,16 @@ function importSelected(){
         cats=[cat.id];
       }
     }
-    state.meals.push({
-      id:'meal_'+Date.now()+'_'+Math.random().toString(36).slice(2),
-      name:m.name, categories:cats,
-      ingredients:Array.isArray(m.ingredients)?m.ingredients:[],
-      notes:m.notes||'', lastUsedWeek:0
-    });
+      const recipeSteps = m.recipe ? m.recipe.split('|').map((s,i)=>`${i+1}. ${s.trim()}`).join('\n') : '';
+      const urlLine = (m.source_url||'').startsWith('http') ? '🔗 '+m.source_url : '';
+      const notesText = [m.notes||'', recipeSteps, urlLine].filter(Boolean).join('\n');
+      state.meals.push({
+        id:'meal_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+        name:m.name, categories:cats,
+        ingredients:Array.isArray(m.ingredients)?m.ingredients:[],
+        notes: notesText,
+        lastUsedWeek:0
+      });
     added++;
   });
   save();
