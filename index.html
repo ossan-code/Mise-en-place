@@ -356,8 +356,15 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
             <option value="10">10</option>
             <option value="15">15</option>
           </select>
+          <div style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;">
+            <button id="recipe-mode-short" onclick="setRecipeMode('short')"
+              style="padding:7px 12px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;background:var(--purple);color:#fff;transition:all .15s;" title="Short recipe: 3–5 step summary">⚡ Short</button>
+            <button id="recipe-mode-long" onclick="setRecipeMode('long')"
+              style="padding:7px 12px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;background:var(--surface3);color:var(--text-faint);transition:all .15s;" title="Detailed recipe: full instructions with quantities and timing">📖 Detailed</button>
+          </div>
           <button class="btn btn-purple" onclick="runAISuggestions()" id="ai-suggest-btn">✨ Suggest Meals</button>
         </div>
+        <div id="recipe-mode-hint" style="font-size:11px;color:var(--text-faint);margin-top:8px;">⚡ Short: concise 3–5 step summary · 📖 Detailed: full instructions with quantities, temperatures and tips</div>
       </div>
       <div id="ai-results"></div>
     </div>
@@ -1195,6 +1202,19 @@ function renderDBThumbnails(meals, cat){
     + '</div>';
 }
 
+function setRecipeMode(mode){
+  const shortBtn = document.getElementById('recipe-mode-short');
+  const longBtn  = document.getElementById('recipe-mode-long');
+  if(!shortBtn || !longBtn) return;
+  if(mode === 'short'){
+    shortBtn.style.background = 'var(--purple)'; shortBtn.style.color = '#fff';
+    longBtn.style.background  = 'var(--surface3)'; longBtn.style.color = 'var(--text-faint)';
+  } else {
+    longBtn.style.background  = 'var(--purple)'; longBtn.style.color = '#fff';
+    shortBtn.style.background = 'var(--surface3)'; shortBtn.style.color = 'var(--text-faint)';
+  }
+}
+
 function renderDiscoverList(meals, containerId, accentVar){
   const el = document.getElementById(containerId);
   if(!meals.length){el.innerHTML='<div class="empty-state"><div class="icon">🤷</div><p>No results. Try a different search.</p></div>';return;}
@@ -1207,15 +1227,19 @@ function renderDiscoverList(meals, containerId, accentVar){
         let recipeHtml = '';
         if(isAI && m.recipe){
           const steps = m.recipe.split('|').map(s=>s.trim()).filter(Boolean);
+          const isDetailed = steps.length > 5 || steps.some(s=>s.length > 80);
           const hasUrl = m.source_url && m.source_url.startsWith('http');
           const urlDomain = hasUrl ? (()=>{ try{ return new URL(m.source_url).hostname.replace('www.',''); }catch(e){ return m.source_url; } })() : '';
           recipeHtml = `
             <div id="recipe-${m.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);margin-bottom:6px;">Quick Recipe</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);">${isDetailed?'📖 Detailed Recipe':'⚡ Quick Recipe'}</div>
+                <div style="font-size:10px;color:var(--text-faint);">${steps.length} steps</div>
+              </div>
               ${steps.map((s,i)=>`
-                <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:5px;">
-                  <div style="min-width:18px;height:18px;border-radius:50%;background:${accent};color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</div>
-                  <div style="font-size:12px;color:var(--text-soft);line-height:1.4;">${s}</div>
+                <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:${isDetailed?'10':'6'}px;${isDetailed?'padding-bottom:10px;border-bottom:1px solid var(--surface3);':''}">
+                  <div style="min-width:22px;height:22px;border-radius:50%;background:${accent};color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</div>
+                  <div style="font-size:${isDetailed?'13':'12'}px;color:var(--text-soft);line-height:1.5;">${s}</div>
                 </div>`).join('')}
               ${hasUrl ? `
                 <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
@@ -1298,20 +1322,27 @@ async function runAISuggestions(){
     return;
   }
   const count = document.getElementById('ai-count').value;
+  const recipeMode = document.getElementById('recipe-mode-short').style.background === 'var(--purple)' ? 'short' : 'long';
   const btn = document.getElementById('ai-suggest-btn');
   const el  = document.getElementById('ai-results');
   btn.disabled=true; btn.textContent='✨ Thinking…';
   el.innerHTML='<div class="empty-state"><div class="icon" style="font-size:28px;">🤖</div><p>AI is generating meal suggestions…</p></div>';
 
+  const recipeInstruction = recipeMode === 'short'
+    ? `- "recipe": concise cooking method in exactly 3–5 steps as a single string, steps separated by " | ". Max 15 words per step. No quantities needed.`
+    : `- "recipe": detailed full recipe as a single string, steps separated by " | ". Include: exact ingredient quantities in each step, cooking temperatures, times, and any useful tips. Write 6–10 thorough steps. Each step can be up to 40 words.`;
+
   const sysPrompt = `You are a culinary expert. Return ONLY a valid JSON array with no markdown and no explanation at all — just the raw JSON array.
 Each element must have exactly these fields:
 - "name": meal name string
 - "category": one-word category string
-- "ingredients": array of ingredient name strings (just ingredient names, no quantities)
+- "ingredients": array of ingredient name strings with quantities (e.g. "200g chicken breast", "2 cloves garlic")
 - "notes": one sentence description of the dish
-- "recipe": short cooking method in 3-5 steps as a single string, each step separated by " | " (pipe character). Keep each step concise, max 15 words.
+${recipeInstruction}
 - "source_url": if this is a well-known real dish that has a popular recipe on the web (e.g. on AllRecipes, BBC Good Food, Food Network, Serious Eats, NYT Cooking, or the dish's Wikipedia page), provide the most likely direct URL string. If you are not confident a real URL exists for this specific dish, return an empty string "". Do NOT invent URLs — only provide URLs you are highly confident are real and currently live.
 Return exactly ${count} meals.`;
+
+  const maxTokens = recipeMode === 'short' ? 2000 : 6000;
 
   try{
     // Try primary model, fall back to smaller one if needed
@@ -1324,7 +1355,7 @@ Return exactly ${count} meals.`;
         body:JSON.stringify({
           model,
           temperature:0.7,
-          max_tokens:2000,
+          max_tokens:maxTokens,
           messages:[
             {role:'system', content:sysPrompt},
             {role:'user',   content:prompt}
