@@ -1241,15 +1241,14 @@ function renderDiscoverList(meals, containerId, accentVar){
                   <div style="min-width:22px;height:22px;border-radius:50%;background:${accent};color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</div>
                   <div style="font-size:${isDetailed?'13':'12'}px;color:var(--text-soft);line-height:1.5;">${s}</div>
                 </div>`).join('')}
-              ${hasUrl ? `
-                <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
+              ${hasUrl ? `<div class="recipe-link-row" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
                   <a href="${m.source_url}" target="_blank" rel="noopener noreferrer"
                     onclick="event.stopPropagation();"
                     style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--blue);text-decoration:none;padding:5px 10px;border:1px solid var(--blue);border-radius:6px;transition:all .15s;"
                     onmouseover="this.style.background='rgba(77,166,255,0.12)'" onmouseout="this.style.background='transparent'">
                     🔗 Full recipe on ${urlDomain} ↗
                   </a>
-                </div>` : ''}
+                </div>` : '<div class="recipe-link-row" style="display:none;"></div>'}
             </div>`;
         }
         return `<div id="row-${m.id}"
@@ -1312,6 +1311,57 @@ function loadGroqKey(){
   }catch(e){}
 }
 
+// ── Real recipe URL search (DuckDuckGo — no API key needed) ───
+const RECIPE_SITES = ['allrecipes.com','bbcgoodfood.com','food.com',
+  'seriouseats.com','foodnetwork.com','simplyrecipes.com','epicurious.com'];
+
+async function searchRecipeUrl(mealName){
+  // Use DuckDuckGo instant answer API — CORS-open, no key required
+  const sites = RECIPE_SITES.slice(0,4).map(s=>'site:'+s).join(' OR ');
+  const q = encodeURIComponent(`${mealName} recipe (${sites})`);
+  try{
+    const r = await fetch(`https://api.duckduckgo.com/?q=${q}&format=json&no_redirect=1&no_html=1&skip_disambig=1`,
+      {headers:{'Accept':'application/json'}});
+    const d = await r.json();
+    // Check AbstractURL first (Wikipedia / authoritative source)
+    if(d.AbstractURL && d.AbstractURL.startsWith('http')) return d.AbstractURL;
+    // Check RelatedTopics
+    const topics = d.RelatedTopics||[];
+    for(const t of topics){
+      const url = t.FirstURL||'';
+      if(RECIPE_SITES.some(s=>url.includes(s))) return url;
+    }
+    // Check Results
+    const results = d.Results||[];
+    for(const res of results){
+      const url = res.FirstURL||'';
+      if(url.startsWith('http') && RECIPE_SITES.some(s=>url.includes(s))) return url;
+    }
+    return '';
+  }catch(e){ return ''; }
+}
+
+function injectRecipeLink(mealId, url){
+  // If the recipe panel for this meal is open, inject the link live
+  const panel = document.getElementById('recipe-'+mealId);
+  if(!panel || panel.style.display==='none') return;
+  // Remove any existing "no link" state and add the link
+  const existing = panel.querySelector('.recipe-link-row');
+  if(existing) existing.remove();
+  try{
+    const domain = new URL(url).hostname.replace('www.','');
+    const div = document.createElement('div');
+    div.className = 'recipe-link-row';
+    div.style.cssText = 'margin-top:10px;padding-top:8px;border-top:1px solid var(--border);';
+    div.innerHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer"
+      onclick="event.stopPropagation();"
+      style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--blue);text-decoration:none;padding:5px 10px;border:1px solid var(--blue);border-radius:6px;"
+      onmouseover="this.style.background='rgba(77,166,255,0.12)'" onmouseout="this.style.background='transparent'">
+      🔗 Full recipe on ${domain} ↗</a>`;
+    panel.appendChild(div);
+  }catch(e){}
+}
+
 async function runAISuggestions(){
   const prompt = document.getElementById('ai-prompt-input').value.trim();
   if(!prompt){toast('Please describe what kind of meals you want.');return;}
@@ -1339,7 +1389,6 @@ Each element must have exactly these fields:
 - "ingredients": array of ingredient name strings with quantities (e.g. "200g chicken breast", "2 cloves garlic")
 - "notes": one sentence description of the dish
 ${recipeInstruction}
-- "source_url": if this is a well-known real dish that has a popular recipe on the web (e.g. on AllRecipes, BBC Good Food, Food Network, Serious Eats, NYT Cooking, or the dish's Wikipedia page), provide the most likely direct URL string. If you are not confident a real URL exists for this specific dish, return an empty string "". Do NOT invent URLs — only provide URLs you are highly confident are real and currently live.
 Return exactly ${count} meals.`;
 
   const maxTokens = recipeMode === 'short' ? 2000 : 6000;
@@ -1363,9 +1412,9 @@ Return exactly ${count} meals.`;
         })
       });
       data = await resp.json();
-      if(!data.error) break; // success — stop trying
+      if(!data.error) break;
       if(data.error && !data.error.message?.includes('decommissioned') && !data.error.message?.includes('deprecated')) {
-        throw new Error(data.error.message||'Groq API error'); // real error, don't retry
+        throw new Error(data.error.message||'Groq API error');
       }
     }
     if(data.error) throw new Error(data.error.message||'Groq API error');
@@ -1376,11 +1425,32 @@ Return exactly ${count} meals.`;
       const meal = {id, name:m.name, category:m.category, source_cat:m.category||'',
                     ingredients:Array.isArray(m.ingredients)?m.ingredients:[],
                     notes:m.notes||'', recipe:m.recipe||'',
-                    source_url: (m.source_url||'').trim()};
+                    source_url: ''};   // filled in by real search below
       discoverMeals[id] = meal;
       return meal;
     });
+
+    // Render immediately so user sees results right away
     renderDiscoverList(mapped, 'ai-results', 'purple');
+
+    // Then search for real recipe URLs in the background, one per meal
+    el.insertAdjacentHTML('afterbegin',
+      '<div id="url-search-status" style="font-size:11px;color:var(--text-faint);margin-bottom:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;">🔍 Finding real recipe links…</div>');
+    let found = 0;
+    await Promise.allSettled(mapped.map(async meal => {
+      const url = await searchRecipeUrl(meal.name);
+      if(url){
+        meal.source_url = url;
+        discoverMeals[meal.id].source_url = url;
+        found++;
+        // Update the recipe panel link live if it's already open
+        injectRecipeLink(meal.id, url);
+      }
+    }));
+    const statusEl = document.getElementById('url-search-status');
+    if(statusEl) statusEl.remove();
+    if(found > 0) toast(`🔗 Found real recipe links for ${found} meal${found!==1?'s':''}`);
+
   }catch(e){
     const isAuthErr = e.message && e.message.toLowerCase().includes('auth');
     el.innerHTML=`<div class="empty-state"><div class="icon">⚠️</div>
