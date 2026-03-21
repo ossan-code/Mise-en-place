@@ -1476,8 +1476,6 @@ function renderDiscoverList(meals, containerId, accentVar){
         if(isAI && m.recipe){
           const steps = m.recipe.split('|').map(s=>s.trim()).filter(Boolean);
           const isDetailed = steps.length > 5 || steps.some(s=>s.length > 80);
-          const hasUrl = m.source_url && m.source_url.startsWith('http');
-          const urlDomain = hasUrl ? (()=>{ try{ return new URL(m.source_url).hostname.replace('www.',''); }catch(e){ return m.source_url; } })() : '';
           recipeHtml = `
             <div id="recipe-${m.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -1489,16 +1487,12 @@ function renderDiscoverList(meals, containerId, accentVar){
                   <div style="min-width:22px;height:22px;border-radius:50%;background:${accent};color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</div>
                   <div style="font-size:${isDetailed?'13':'12'}px;color:var(--text-soft);line-height:1.5;">${s}</div>
                 </div>`).join('')}
-              ${hasUrl ? `<div class="recipe-link-row" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
-                  <a href="${m.source_url}" target="_blank" rel="noopener noreferrer"
-                    onclick="event.stopPropagation();"
-                    style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--blue);text-decoration:none;padding:5px 10px;border:1px solid var(--blue);border-radius:6px;transition:all .15s;"
-                    onmouseover="this.style.background='rgba(77,166,255,0.12)'" onmouseout="this.style.background='transparent'">
-                    🔗 Full recipe on ${urlDomain} ↗
-                  </a>
-                </div>` : '<div class="recipe-link-row" style="display:none;"></div>'}
+              <div class="recipe-link-row" id="recipe-link-panel-${m.id}"></div>
             </div>`;
         }
+        // Inline link shown directly on card (populated by injectRecipeLink after search)
+        const hasUrl = m.source_url && m.source_url.startsWith('http');
+        const inlineLink = hasUrl ? buildLinkHtml(m.source_url) : '';
         return `<div id="row-${m.id}"
           style="background:var(--surface);border:1.5px solid ${sel?accent:'var(--border)'};border-radius:10px;padding:11px 14px;transition:all .15s;">
           <div style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;" onclick="toggleDiscover('${m.id}')">
@@ -1510,6 +1504,8 @@ function renderDiscoverList(meals, containerId, accentVar){
               <div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${m.source_cat||m.category||''}</div>
               <div style="font-size:11px;color:var(--text-soft);margin-top:3px;">🧺 ${(m.ingredients||[]).slice(0,4).join(', ')}${(m.ingredients||[]).length>4?'…':''}</div>
               ${m.notes?`<div style="font-size:11px;color:var(--text-faint);margin-top:3px;font-style:italic;">${m.notes}</div>`:''}
+              <!-- Link shown directly on card -->
+              <div id="card-link-${m.id}" style="margin-top:6px;">${inlineLink}</div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
               <div id="check-${m.id}" style="font-size:20px;">${sel?'✅':'⬕'}</div>
@@ -1522,6 +1518,18 @@ function renderDiscoverList(meals, containerId, accentVar){
         </div>`;
       }).join('')
     + '</div>';
+}
+
+function buildLinkHtml(url){
+  if(!url || !url.startsWith('http')) return '';
+  try{
+    const domain = new URL(url).hostname.replace('www.','');
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer"
+      onclick="event.stopPropagation();"
+      style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--blue);text-decoration:none;padding:3px 9px;border:1px solid rgba(56,189,248,0.3);border-radius:5px;background:rgba(56,189,248,0.07);transition:all .15s;"
+      onmouseover="this.style.background='rgba(56,189,248,0.15)'" onmouseout="this.style.background='rgba(56,189,248,0.07)'">
+      🔗 ${domain} ↗</a>`;
+  }catch(e){ return ''; }
 }
 
 function toggleRecipe(id){
@@ -1605,24 +1613,17 @@ ${names}`;
 }
 
 function injectRecipeLink(mealId, url){
-  // If the recipe panel for this meal is open, inject the link live
-  const panel = document.getElementById('recipe-'+mealId);
-  if(!panel || panel.style.display==='none') return;
-  // Remove any existing "no link" state and add the link
-  const existing = panel.querySelector('.recipe-link-row');
-  if(existing) existing.remove();
-  try{
-    const domain = new URL(url).hostname.replace('www.','');
-    const div = document.createElement('div');
-    div.className = 'recipe-link-row';
-    div.style.cssText = 'margin-top:10px;padding-top:8px;border-top:1px solid var(--border);';
-    div.innerHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer"
-      onclick="event.stopPropagation();"
-      style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--blue);text-decoration:none;padding:5px 10px;border:1px solid var(--blue);border-radius:6px;"
-      onmouseover="this.style.background='rgba(77,166,255,0.12)'" onmouseout="this.style.background='transparent'">
-      🔗 Full recipe on ${domain} ↗</a>`;
-    panel.appendChild(div);
-  }catch(e){}
+  if(!url || !url.startsWith('http')) return;
+  const linkHtml = buildLinkHtml(url);
+  // 1. Show on card surface (always visible)
+  const cardLink = document.getElementById('card-link-'+mealId);
+  if(cardLink) cardLink.innerHTML = linkHtml;
+  // 2. Also show inside recipe panel if open
+  const panelLink = document.getElementById('recipe-link-panel-'+mealId);
+  if(panelLink){
+    panelLink.style.cssText = 'margin-top:10px;padding-top:8px;border-top:1px solid var(--border);';
+    panelLink.innerHTML = linkHtml;
+  }
 }
 
 async function runAISuggestions(){
