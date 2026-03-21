@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Mise en Place v4 - 2026 -->
+<!-- Mise en Place v4 - Built: Saturday 21 March 2026 18:38 UTC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1524,11 +1524,13 @@ function buildLinkHtml(url){
   if(!url || !url.startsWith('http')) return '';
   try{
     const domain = new URL(url).hostname.replace('www.','');
+    const isSearch = url.includes('/search') || url.includes('google.com/search');
+    const label = isSearch ? `🔍 Search on ${domain}` : `🔗 ${domain}`;
     return `<a href="${url}" target="_blank" rel="noopener noreferrer"
       onclick="event.stopPropagation();"
       style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--blue);text-decoration:none;padding:3px 9px;border:1px solid rgba(56,189,248,0.3);border-radius:5px;background:rgba(56,189,248,0.07);transition:all .15s;"
       onmouseover="this.style.background='rgba(56,189,248,0.15)'" onmouseout="this.style.background='rgba(56,189,248,0.07)'">
-      🔗 ${domain} ↗</a>`;
+      ${label} ↗</a>`;
   }catch(e){ return ''; }
 }
 
@@ -1567,49 +1569,35 @@ function loadGroqKey(){
   }catch(e){}
 }
 
-// ── Real recipe URL search (DuckDuckGo — no API key needed) ───
-const RECIPE_SITES = ['allrecipes.com','bbcgoodfood.com','food.com',
-  'seriouseats.com','foodnetwork.com','simplyrecipes.com','epicurious.com'];
+// ── Recipe links — use guaranteed search URLs instead of guessed page URLs ───
+// Direct recipe page URLs hallucinated by AI are unreliable.
+// Instead we build search URLs on trusted sites — these always work.
 
-// Ask Groq to find real recipe URLs — uses the existing key, no CORS issues
+function buildRecipeSearchUrl(mealName){
+  // Encode for URL
+  const q = encodeURIComponent(mealName + ' recipe');
+  // Use Google search scoped to the best recipe sites
+  return `https://www.google.com/search?q=${q}+site%3Aallrecipes.com+OR+site%3Abbcgoodfood.com+OR+site%3Aseriouseats.com`;
+}
+
+function buildAllrecipesSearchUrl(mealName){
+  const q = encodeURIComponent(mealName);
+  return `https://www.allrecipes.com/search?q=${q}`;
+}
+
+function buildBBCSearchUrl(mealName){
+  const q = encodeURIComponent(mealName);
+  return `https://www.bbcgoodfood.com/search?q=${q}`;
+}
+
+// No longer calls Groq for URLs — just builds reliable search links
 async function searchRecipeUrlsBatch(meals, apiKey){
-  if(!meals.length || !apiKey) return {};
-  const names = meals.map((m,i) => `${i+1}. ${m.name}`).join('\n');
-  const prompt = `For each dish below, provide the single most likely real recipe URL from a well-known site (allrecipes.com, bbcgoodfood.com, food.com, seriouseats.com, foodnetwork.com, simplyrecipes.com, or epicurious.com).
-
-Rules:
-- Only provide a URL if you are highly confident it exists and follows that site's standard URL pattern
-- For regional/obscure dishes unlikely to be on these sites, return empty string ""
-- Return ONLY a JSON object mapping the number to the URL, e.g. {"1":"https://...","2":"","3":"https://..."}
-- No markdown, no explanation, just the JSON object
-
-Dishes:
-${names}`;
-  try{
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({
-        model:'llama-3.3-70b-versatile',
-        max_tokens:800,
-        temperature:0.1,
-        messages:[{role:'user', content:prompt}]
-      })
-    });
-    const data = await resp.json();
-    if(data.error) return {};
-    const text = (data.choices?.[0]?.message?.content||'').replace(/```json|```/g,'').trim();
-    const urlMap = JSON.parse(text);
-    // Map back to meal ids
-    const result = {};
-    meals.forEach((meal, i) => {
-      const url = urlMap[String(i+1)]||'';
-      if(url && url.startsWith('http') && RECIPE_SITES.some(s=>url.includes(s))){
-        result[meal.id] = url;
-      }
-    });
-    return result;
-  }catch(e){ return {}; }
+  // Build a guaranteed-working search URL for every meal
+  const result = {};
+  meals.forEach(meal => {
+    result[meal.id] = buildAllrecipesSearchUrl(meal.name);
+  });
+  return result;
 }
 
 function injectRecipeLink(mealId, url){
@@ -1697,9 +1685,9 @@ Return exactly ${count} meals.`;
     // Render immediately so user sees results right away
     renderDiscoverList(mapped, 'ai-results', 'purple');
 
-    // Then look up real recipe URLs in one batch Groq call
+    // Add search links to every meal card
     el.insertAdjacentHTML('afterbegin',
-      '<div id="url-search-status" style="font-size:11px;color:var(--text-faint);margin-bottom:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;">🔍 Looking up recipe links…</div>');
+      '<div id="url-search-status" style="font-size:11px;color:var(--text-faint);margin-bottom:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;">🔍 Adding recipe search links…</div>');
     const urlMap = await searchRecipeUrlsBatch(mapped, key);
     const found = Object.keys(urlMap).length;
     Object.entries(urlMap).forEach(([mealId, url]) => {
@@ -1711,8 +1699,7 @@ Return exactly ${count} meals.`;
     });
     const statusEl = document.getElementById('url-search-status');
     if(statusEl) statusEl.remove();
-    if(found > 0) toast(`🔗 Found recipe links for ${found} meal${found!==1?'s':''}`);
-    else toast('No recipe links found for these dishes — recipe steps saved instead');
+    if(found > 0) toast(`🔍 Search links added — click to find recipes online`);
   }catch(e){
     const isAuthErr = e.message && e.message.toLowerCase().includes('auth');
     el.innerHTML=`<div class="empty-state"><div class="icon">⚠️</div>
