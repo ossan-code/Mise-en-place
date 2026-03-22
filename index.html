@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Mise en Place v4 - Built: Saturday 21 March 2026 21:52 UTC -->
+<!-- Mise en Place v5 - Built: Sunday 22 March 2026 12:00 UTC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -579,15 +579,77 @@ header nav { display:none; }
   </div>
 </header>
 <main>
+  <!-- HOME -->
+  <div id="panel-home" class="panel">
+    <div style="background:linear-gradient(135deg,#151D35 0%,#1C2544 100%);border:1px solid var(--border);border-radius:20px;padding:28px 24px;margin-bottom:18px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-60px;right:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(108,99,255,0.18),transparent 70%);pointer-events:none;"></div>
+      <div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">Welcome to</div>
+      <div style="font-size:30px;font-weight:800;color:var(--text);letter-spacing:-0.03em;margin-bottom:6px;">Mise en Place</div>
+      <div style="font-size:14px;color:var(--text-soft);line-height:1.6;margin-bottom:20px;">Your personal weekly meal planner.<br>Plan smarter. Eat better. Stay balanced.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="showPanel('planner')">Start Planning</button>
+        <button class="btn btn-outline" onclick="showPanel('discover')">Discover Meals</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+      <div onclick="showPanel('planner')" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .18s;" onmouseover="this.style.borderColor='rgba(108,99,255,0.4)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:28px;margin-bottom:8px;">📅</div>
+        <div style="font-weight:700;color:var(--text);font-size:13px;margin-bottom:4px;">Weekly Planner</div>
+        <div style="font-size:11px;color:var(--text-faint);line-height:1.5;">Plan with or without predefined daily categories. Guided or free selection.</div>
+      </div>
+      <div onclick="showPanel('discover')" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .18s;" onmouseover="this.style.borderColor='rgba(167,139,250,0.4)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:28px;margin-bottom:8px;">🤖</div>
+        <div style="font-weight:700;color:var(--text);font-size:13px;margin-bottom:4px;">AI Meal Discovery</div>
+        <div style="font-size:11px;color:var(--text-faint);line-height:1.5;">Ask AI to suggest new meals. Get recipes, ingredients and search links.</div>
+      </div>
+      <div onclick="openAIDietPlanner()" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .18s;" onmouseover="this.style.borderColor='rgba(34,211,238,0.4)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:28px;margin-bottom:8px;">🎯</div>
+        <div style="font-weight:700;color:var(--text);font-size:13px;margin-bottom:4px;">AI Diet Planner</div>
+        <div style="font-size:11px;color:var(--text-faint);line-height:1.5;">Get a personalised weekly category plan for your health goals.</div>
+      </div>
+      <div onclick="showPanel('stats')" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .18s;" onmouseover="this.style.borderColor='rgba(52,211,153,0.4)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:28px;margin-bottom:8px;">📊</div>
+        <div style="font-weight:700;color:var(--text);font-size:13px;margin-bottom:4px;">Health Insights</div>
+        <div style="font-size:11px;color:var(--text-faint);line-height:1.5;">Diet balance analysis and personalised health suggestions.</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);margin-bottom:12px;">How it works</div>
+      <div style="display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="min-width:26px;height:26px;border-radius:8px;background:var(--accent-glow);border:1px solid rgba(108,99,255,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--accent2);">1</div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--text);">Add meals to your pool</div><div style="font-size:11px;color:var(--text-faint);margin-top:2px;">Import from CSV, use the built-in list, or discover with AI</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="min-width:26px;height:26px;border-radius:8px;background:var(--accent-glow);border:1px solid rgba(108,99,255,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--accent2);">2</div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--text);">Choose Guided or Free planning mode</div><div style="font-size:11px;color:var(--text-faint);margin-top:2px;">Guided: filter by category per day. Free: any meal any day.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="min-width:26px;height:26px;border-radius:8px;background:var(--accent-glow);border:1px solid rgba(108,99,255,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--accent2);">3</div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--text);">Generate and accept your weekly menu</div><div style="font-size:11px;color:var(--text-faint);margin-top:2px;">Swap meals you don't like, then accept to save</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="min-width:26px;height:26px;border-radius:8px;background:var(--accent-glow);border:1px solid rgba(108,99,255,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--accent2);">4</div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--text);">Track stats and get health insights</div><div style="font-size:11px;color:var(--text-faint);margin-top:2px;">After 4 weeks the app analyses your diet balance</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- PLANNER -->
   <div id="panel-planner" class="panel active">
     <div class="planner-hero">
       <div class="planner-hero-week" id="current-week-label">Loading…</div>
       <div style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:-0.03em;">Weekly Menu</div>
       <span id="editing-badge-planner" style="display:none;" class="editing-badge">✏️ Editing history</span>
-      <div class="planner-hero-actions">
+      <div class="planner-hero-actions" style="margin-top:10px;">
         <button class="quick-chip" onclick="generateMenu()">🎲 Regenerate</button>
-        <button class="quick-chip" id="accept-btn" onclick="acceptMenu()">✓ Accept</button>
+        <button class="quick-chip primary" id="accept-btn" onclick="acceptMenu()">✓ Accept</button>
+        <button class="quick-chip" onclick="openAIDietPlanner()">🎯 AI Diet</button>
+        <div style="display:flex;align-items:center;gap:0;background:var(--surface3);border-radius:20px;padding:2px;">
+          <button id="mode-guided" onclick="setPlanMode('guided')" style="padding:5px 12px;border-radius:18px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;background:var(--accent);color:#fff;transition:all .15s;">🗂 Guided</button>
+          <button id="mode-free" onclick="setPlanMode('free')" style="padding:5px 12px;border-radius:18px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;background:transparent;color:var(--text-faint);transition:all .15s;">🎲 Free</button>
+        </div>
       </div>
     </div>
     <div class="week-grid" id="week-grid"></div>
@@ -647,9 +709,10 @@ header nav { display:none; }
     <div class="section-title">Stats & Insights</div>
     <div class="section-sub">How your meal plan looks over time</div>
     <div class="stats-grid" id="stats-grid"></div>
+    <div id="health-insights-wrap" style="margin-bottom:16px;"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-      <div class="card"><h3 style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:15px;margin-bottom:13px;color:var(--text);">Most Used Meals</h3><div id="stats-top-meals"></div></div>
-      <div class="card"><h3 style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:15px;margin-bottom:13px;color:var(--text);">Category Distribution</h3><div id="stats-cats"></div></div>
+      <div class="card"><h3 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:13px;color:var(--text-soft);">Most Used Meals</h3><div id="stats-top-meals"></div></div>
+      <div class="card"><h3 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:13px;color:var(--text-soft);">Category Distribution</h3><div id="stats-cats"></div></div>
     </div>
   </div>
 
@@ -697,12 +760,12 @@ header nav { display:none; }
 
     <!-- Tabs -->
     <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);">
-      <button id="disc-tab-db" onclick="switchDiscoverTab('db')" style="padding:10px 22px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;transition:all .2s;">🌍 Recipe Database</button>
-      <button id="disc-tab-ai" onclick="switchDiscoverTab('ai')" style="padding:10px 22px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:var(--text-faint);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;">🤖 AI Suggestions</button>
+      <button id="disc-tab-ai" onclick="switchDiscoverTab('ai')" style="padding:10px 22px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;transition:all .2s;">🤖 AI Suggestions</button>
+      <button id="disc-tab-db" onclick="switchDiscoverTab('db')" style="padding:10px 22px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:var(--text-faint);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;">🌍 Recipe Database</button>
     </div>
 
     <!-- DATABASE TAB -->
-    <div id="disc-db-tab">
+    <div id="disc-db-tab" style="display:none;">
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <div class="search-bar" style="flex:1;min-width:200px;">
           <span class="search-icon">🔍</span>
@@ -718,7 +781,7 @@ header nav { display:none; }
     </div>
 
     <!-- AI TAB -->
-    <div id="disc-ai-tab" style="display:none;">
+    <div id="disc-ai-tab">
       <!-- API Key setup card -->
       <div id="ai-setup-card" class="card" style="margin-bottom:14px;border-color:var(--gold);background:var(--gold-pale);">
         <div style="display:flex;align-items:flex-start;gap:10px;">
@@ -775,12 +838,16 @@ header nav { display:none; }
   </div>
 
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v4 · Built Saturday 21 March 2026 21:52 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Sunday 22 March 2026 12:00 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
 <!-- Bottom Navigation -->
 <nav class="bottom-nav" id="bottom-nav">
+  <button onclick="showPanel('home')" id="nav-home">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">Home</span>
+  </button>
   <button class="active" onclick="showPanel('planner')" id="nav-planner">
     <span class="nav-icon">📅</span>
     <span class="nav-label">Planner</span>
@@ -788,10 +855,6 @@ header nav { display:none; }
   <button onclick="showPanel('meals')" id="nav-meals">
     <span class="nav-icon">🍽</span>
     <span class="nav-label">Meals</span>
-  </button>
-  <button onclick="showPanel('history')" id="nav-history">
-    <span class="nav-icon">📚</span>
-    <span class="nav-label">History</span>
   </button>
   <button onclick="showPanel('discover')" id="nav-discover">
     <span class="nav-icon">🔍</span>
@@ -821,6 +884,25 @@ header nav { display:none; }
     <span style="font-size:20px;">⬆️</span><div><div style="font-weight:600;">Export Data</div><div style="font-size:11px;color:var(--text-faint);">Backup all meals and history</div></div>
   </button>
 </div>
+</div>
+
+
+<!-- AI DIET PLANNER MODAL -->
+<div class="modal-overlay" id="ai-diet-modal">
+  <div class="modal" style="width:520px;">
+    <div class="modal-title">🎯 AI Diet Planner</div>
+    <p style="font-size:13px;color:var(--text-soft);margin-bottom:14px;">Describe your health goal and AI will suggest the best category plan for each day of your week.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;" id="diet-presets"></div>
+    <div style="margin-bottom:12px;">
+      <label>Your diet goal</label>
+      <textarea id="diet-goal-input" rows="2" placeholder="e.g. I want to lose weight and reduce red meat&#10;I do sport 4 days a week and need more protein&#10;Heart friendly diet for the whole family" style="resize:none;"></textarea>
+    </div>
+    <button class="btn btn-teal" id="diet-plan-btn" onclick="runAIDietPlan()" style="width:100%;margin-bottom:14px;">🎯 Generate Plan</button>
+    <div id="diet-plan-output"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAIDietPlanner()">Close</button>
+    </div>
+  </div>
 </div>
 
 <!-- MEAL MODAL -->
@@ -953,6 +1035,7 @@ function load(){
   if(!state.currentWeekNum)state.currentWeekNum=isoWeek(new Date());
   if(!state.currentYear)state.currentYear=new Date().getFullYear();
   state.editingHistoryId=null;
+  if(!state.planMode)state.planMode='guided';
 }
 
 // ── DATE HELPERS ──────────────────────────────────────────────
@@ -968,10 +1051,11 @@ function showPanel(name){
   const panel = document.getElementById('panel-'+name);
   if(panel) panel.classList.add('active');
   // Sync bottom nav
-  ['planner','meals','history','discover','more'].forEach(n=>{
+  ['home','planner','meals','discover','more'].forEach(n=>{
     const btn=document.getElementById('nav-'+n);
     if(btn) btn.classList.toggle('active', n===name);
   });
+  if(name==='home'){}
   if(name==='planner')renderPlanner();
   if(name==='meals')renderMealList();
   if(name==='history')renderHistoryPanel();
@@ -986,7 +1070,7 @@ function openMoreDrawer(){
   drawer.style.display='block';
   requestAnimationFrame(()=>{ drawer.style.transform='translateY(0)'; });
   // Mark more button active
-  ['planner','meals','history','discover','more'].forEach(n=>{
+  ['home','planner','meals','discover','more'].forEach(n=>{
     const btn=document.getElementById('nav-'+n);
     if(btn) btn.classList.toggle('active',n==='more');
   });
@@ -1002,7 +1086,7 @@ function closeMoreDrawer(){
     const active=document.querySelector('.panel.active');
     if(active){
       const id=active.id.replace('panel-','');
-      ['planner','meals','history','discover','more'].forEach(n=>{
+      ['home','planner','meals','discover','more'].forEach(n=>{
         const btn=document.getElementById('nav-'+n);
         if(btn) btn.classList.toggle('active',n===id);
       });
@@ -1012,7 +1096,7 @@ function closeMoreDrawer(){
 
 // ── PLANNER ───────────────────────────────────────────────────
 function getCatForDay(day){const id=state.dayAssignments[day];return state.categories.find(c=>c.id===id)||null;}
-function getMealsForDay(day){const catId=state.dayAssignments[day];const min=state.currentWeekNum-state.rotationWeeks;return state.meals.filter(m=>(!catId||m.categories.includes(catId))&&(m.lastUsedWeek||0)<=min);}
+// getMealsForDay — defined in plan mode section above
 function generateMenu(){
   const menu={};const used=new Set();
   DAYS.forEach(day=>{
@@ -1282,6 +1366,7 @@ function renderMealList(){
 
 // ── STATS ─────────────────────────────────────────────────────
 function renderStats(){
+  renderHealthInsights();
   const umap={};state.menuHistory.forEach(e=>Object.values(e.menu).forEach(id=>{if(id)umap[id]=(umap[id]||0)+1;}));
   document.getElementById('stats-grid').innerHTML=`<div class="stat-card"><div class="stat-num">${state.meals.length}</div><div class="stat-label">Meals in Pool</div></div><div class="stat-card"><div class="stat-num">${state.menuHistory.length}</div><div class="stat-label">Accepted Menus</div></div><div class="stat-card"><div class="stat-num">${state.categories.length}</div><div class="stat-label">Categories</div></div>`;
   const top=Object.entries(umap).sort((a,b)=>b[1]-a[1]).slice(0,8);
@@ -1540,6 +1625,189 @@ function bulkDeleteSelected(){
   toast(`🗑 Deleted ${count} meals.`);
 }
 
+
+// ── PLAN MODE ─────────────────────────────────────────────────
+function setPlanMode(mode){
+  state.planMode=mode;save();
+  const g=document.getElementById('mode-guided');
+  const f=document.getElementById('mode-free');
+  if(g&&f){
+    if(mode==='guided'){
+      g.style.background='var(--accent)';g.style.color='#fff';
+      f.style.background='transparent';f.style.color='var(--text-faint)';
+    } else {
+      f.style.background='var(--accent)';f.style.color='#fff';
+      g.style.background='transparent';g.style.color='var(--text-faint)';
+    }
+  }
+  toast(mode==='guided'?'Guided mode — filtered by day category':'Free mode — any meal on any day');
+  generateMenu();
+}
+
+function getMealsForDay(day){
+  const mode=state.planMode||'guided';
+  const min=state.currentWeekNum-state.rotationWeeks;
+  if(mode==='free') return state.meals.filter(m=>(m.lastUsedWeek||0)<=min);
+  const catId=state.dayAssignments[day];
+  return state.meals.filter(m=>(!catId||m.categories.includes(catId))&&(m.lastUsedWeek||0)<=min);
+}
+
+// ── AI DIET PLANNER ───────────────────────────────────────────
+const DIET_PRESETS=[
+  {emoji:'🏋️',label:'Athletic / Sport'},
+  {emoji:'👶',label:'Family & Toddlers'},
+  {emoji:'⚖️',label:'Weight Loss'},
+  {emoji:'❤️',label:'Heart Friendly'},
+  {emoji:'🌱',label:'More Plant-Based'},
+  {emoji:'🩸',label:'Diabetic Friendly'},
+  {emoji:'💪',label:'Muscle Building'},
+  {emoji:'🧠',label:'Brain Health'},
+];
+
+function openAIDietPlanner(){
+  // Populate preset chips
+  const el=document.getElementById('diet-presets');
+  if(el&&!el.innerHTML){
+    el.innerHTML=DIET_PRESETS.map(p=>
+      `<button class="chip" onclick="document.getElementById('diet-goal-input').value='${p.emoji} ${p.label} diet';this.classList.add('selected');document.querySelectorAll('#diet-presets .chip').forEach(c=>{if(c!==this)c.classList.remove('selected');})">${p.emoji} ${p.label}</button>`
+    ).join('');
+  }
+  document.getElementById('ai-diet-modal').classList.add('open');
+}
+function closeAIDietPlanner(){document.getElementById('ai-diet-modal').classList.remove('open');}
+
+async function runAIDietPlan(){
+  let key=(document.getElementById('groq-api-key')?.value||'').trim();
+  if(!key){try{key=localStorage.getItem('groq_key')||'';}catch(e){}}
+  if(!key||!key.startsWith('gsk_')){
+    toast('Please enter your Groq API key in the Discover tab first.');
+    closeAIDietPlanner();showPanel('discover');return;
+  }
+  const goal=document.getElementById('diet-goal-input').value.trim();
+  if(!goal){toast('Please describe your diet goal.');return;}
+  const btn=document.getElementById('diet-plan-btn');
+  const out=document.getElementById('diet-plan-output');
+  btn.disabled=true;btn.textContent='Planning…';
+  out.innerHTML='<div style="color:var(--text-faint);font-size:13px;padding:10px 0;">Creating your personalised weekly plan…</div>';
+  const catNames=state.categories.map(c=>c.name).join(', ');
+  const prompt=`You are a nutrition expert. The user has these meal categories: ${catNames}. Their goal: "${goal}".
+Create a 7-day weekly meal category plan. Return ONLY valid JSON:
+{"summary":"2-3 sentences how this plan helps","tips":["tip1","tip2","tip3"],"plan":{"Monday":{"categories":["cat"],"reason":"why"},"Tuesday":{"categories":["cat"],"reason":"why"},"Wednesday":{"categories":["cat"],"reason":"why"},"Thursday":{"categories":["cat"],"reason":"why"},"Friday":{"categories":["cat"],"reason":"why"},"Saturday":{"categories":["cat1","cat2"],"reason":"why"},"Sunday":{"categories":["cat"],"reason":"why"}}}
+Use ONLY category names from: ${catNames}. No markdown.`;
+  try{
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1200,temperature:0.4,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    const text=(data.choices?.[0]?.message?.content||'').replace(/```json|```/g,'').trim();
+    const plan=JSON.parse(text);
+    renderDietPlan(plan);
+  }catch(e){
+    out.innerHTML=`<div style="color:var(--pink);font-size:13px;padding:8px 0;">Could not generate plan: ${e.message}</div>`;
+  }finally{btn.disabled=false;btn.textContent='🎯 Generate Plan';}
+}
+
+function renderDietPlan(plan){
+  const DAYS_LIST=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const out=document.getElementById('diet-plan-output');
+  const rows=DAYS_LIST.map(day=>{
+    const d=plan.plan[day]||{};
+    const chips=(d.categories||[]).map(cn=>{
+      const c=state.categories.find(x=>x.name.toLowerCase()===cn.toLowerCase());
+      return c?`<span class="tag ${c.color}">${c.name}</span>`:`<span class="tag cat-purple">${cn}</span>`;
+    }).join(' ');
+    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div style="min-width:82px;font-size:12px;font-weight:700;color:var(--text-soft);padding-top:2px;">${day}</div>
+      <div style="flex:1;">${chips||'<span style="color:var(--text-faint);font-size:12px;">Any</span>'}<div style="font-size:11px;color:var(--text-faint);margin-top:3px;">${d.reason||''}</div></div>
+    </div>`;
+  }).join('');
+  const tips=(plan.tips||[]).map(t=>`<div style="display:flex;gap:8px;margin-bottom:5px;"><span style="color:var(--teal);">✓</span><span style="font-size:12px;color:var(--text-soft);">${t}</span></div>`).join('');
+  // Store plan for apply button
+  const encoded=encodeURIComponent(JSON.stringify(plan));
+  out.innerHTML=`
+    <div style="background:var(--surface2);border-radius:10px;padding:13px;margin-bottom:12px;font-size:12px;color:var(--text-soft);line-height:1.6;">${plan.summary||''}</div>
+    ${rows}
+    ${tips?`<div style="margin-top:12px;padding:11px;background:rgba(34,211,238,0.07);border:1px solid rgba(34,211,238,0.2);border-radius:10px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--teal);margin-bottom:7px;">Tips</div>${tips}</div>`:''}
+    <button class="btn btn-teal" style="width:100%;margin-top:14px;" onclick="applyDietPlan(decodeURIComponent('${encoded}'))">✓ Apply This Plan</button>`;
+}
+
+function applyDietPlan(planStr){
+  let plan;try{plan=JSON.parse(planStr);}catch(e){toast('Error applying plan.');return;}
+  const DAYS_LIST=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  let applied=0;
+  DAYS_LIST.forEach(day=>{
+    const d=plan.plan[day];if(!d||!d.categories||!d.categories.length)return;
+    const c=state.categories.find(x=>x.name.toLowerCase()===(d.categories[0]||'').toLowerCase());
+    if(c){state.dayAssignments[day]=c.id;applied++;}
+  });
+  save();closeAIDietPlanner();
+  setPlanMode('guided');
+  toast('Applied! '+applied+' days updated with your diet plan.');
+}
+
+// ── HEALTH INSIGHTS ───────────────────────────────────────────
+function renderHealthInsights(){
+  const wrap=document.getElementById('health-insights-wrap');
+  if(!wrap)return;
+  const weeks=state.menuHistory.length;
+  if(weeks<4){
+    wrap.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px;">
+      <div style="font-size:30px;">📊</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;color:var(--text);font-size:13px;">Health Insights</div>
+        <div style="font-size:12px;color:var(--text-faint);margin-top:2px;">Available after 4 accepted weeks. You have ${weeks} so far.</div>
+        <div style="margin-top:8px;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;max-width:180px;">
+          <div style="height:100%;width:${Math.min(100,weeks/4*100)}%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;"></div>
+        </div>
+      </div>
+    </div>`;
+    return;
+  }
+  const recent=state.menuHistory.slice(0,8);
+  const catCount={};let total=0;
+  recent.forEach(entry=>{
+    Object.values(entry.menu).forEach(ids=>{
+      (Array.isArray(ids)?ids:(ids?[ids]:[])).forEach(id=>{
+        const meal=state.meals.find(m=>m.id===id);if(!meal)return;
+        meal.categories.forEach(cid=>{catCount[cid]=(catCount[cid]||0)+1;total++;});
+      });
+    });
+  });
+  if(!total){wrap.innerHTML='';return;}
+  const pct=cid=>total?Math.round((catCount[cid]||0)/total*100):0;
+  const insights=[];
+  const meatCats=state.categories.filter(c=>['et','meat','kirmizi','red'].some(k=>c.name.toLowerCase().includes(k)));
+  const meatPct=meatCats.reduce((s,c)=>s+pct(c.id),0);
+  if(meatPct>40)insights.push({icon:'⚠️',col:'rgba(248,113,113,0.1)',brd:'rgba(248,113,113,0.3)',tc:'#FCA5A5',
+    title:'High Red Meat Consumption',text:`${meatPct}% of meals are meat-based. Consider replacing 1-2 days per week with fish or legumes to reduce cardiovascular risk.`});
+  const fishCats=state.categories.filter(c=>['fish','balik','balık','seafood'].some(k=>c.name.toLowerCase().includes(k)));
+  const fishPct=fishCats.reduce((s,c)=>s+pct(c.id),0);
+  if(fishPct<10&&state.categories.length>2)insights.push({icon:'🐟',col:'rgba(34,211,238,0.08)',brd:'rgba(34,211,238,0.25)',tc:'#67E8F9',
+    title:'Low Fish Intake',text:`Only ${fishPct}% fish meals. Omega-3 in fish supports heart and brain health. Aim for 2 fish meals per week.`});
+  const vegCats=state.categories.filter(c=>['legume','bakliyat','vegetarian','sebze','veg','plant'].some(k=>c.name.toLowerCase().includes(k)));
+  const vegPct=vegCats.reduce((s,c)=>s+pct(c.id),0);
+  if(vegPct<15&&state.categories.length>2)insights.push({icon:'🌿',col:'rgba(52,211,153,0.08)',brd:'rgba(52,211,153,0.25)',tc:'#6EE7B7',
+    title:'Low Plant-Based Variety',text:`Only ${vegPct}% legume/vegetable meals. More plant-based meals improve gut health and reduce cholesterol.`});
+  const carbCats=state.categories.filter(c=>['pasta','makarna','carb','noodle'].some(k=>c.name.toLowerCase().includes(k)));
+  const carbPct=carbCats.reduce((s,c)=>s+pct(c.id),0);
+  if(carbPct>30)insights.push({icon:'🍝',col:'rgba(251,191,36,0.08)',brd:'rgba(251,191,36,0.25)',tc:'#FCD34D',
+    title:'High Carbohydrate Intake',text:`${carbPct}% carb-heavy meals. Balance with more protein and vegetables, especially for weight or blood sugar management.`});
+  if(!insights.length)insights.push({icon:'✅',col:'rgba(52,211,153,0.08)',brd:'rgba(52,211,153,0.25)',tc:'#6EE7B7',
+    title:'Good Balance!',text:`Your meal plan shows healthy variety over the past ${weeks} weeks. Keep it up!`});
+  wrap.innerHTML=`<div style="margin-bottom:4px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);margin-bottom:10px;">Health Insights (last ${Math.min(weeks,8)} weeks)</div>
+    ${insights.map(i=>`<div style="background:${i.col};border:1px solid ${i.brd};border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px;">
+      <div style="font-size:22px;">${i.icon}</div>
+      <div><div style="font-weight:700;color:${i.tc};font-size:13px;margin-bottom:3px;">${i.title}</div>
+      <div style="font-size:12px;color:var(--text-soft);line-height:1.6;">${i.text}</div></div>
+    </div>`).join('')}
+  </div>`;
+}
+
 // ── TOAST & KEYBOARD ──────────────────────────────────────────
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));});
@@ -1556,6 +1824,7 @@ let dbCatsLoaded = false;
 function initDiscover(){
   loadGroqKey();
   renderDiscoverImportCats();
+  switchDiscoverTab('ai');
   if(!dbCatsLoaded) loadDBCategories();
   if(!document.getElementById('db-results').innerHTML.trim())
     document.getElementById('db-results').innerHTML =
