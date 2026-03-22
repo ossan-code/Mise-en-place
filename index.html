@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Mise en Place v5 - Built: Sunday 22 March 2026 16:00 UTC -->
+<!-- Mise en Place v5 - Built: Monday 23 March 2026 09:00 UTC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -844,7 +844,7 @@ header nav { display:none; }
   </div>
 
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v5 · Built Sunday 22 March 2026 16:00 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Monday 23 March 2026 09:00 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
@@ -1157,16 +1157,64 @@ function closeMoreDrawer(){
 
 // ── PLANNER ───────────────────────────────────────────────────
 function getCatForDay(day){const id=state.dayAssignments[day];return state.categories.find(c=>c.id===id)||null;}
+function getCatsForDay(day){
+  // Returns array of categories — supports multi-cat from Smart Diet Planner
+  const multi=(state.dayAssignmentMulti||{})[day];
+  if(multi&&multi.length>0) return multi.map(id=>state.categories.find(c=>c.id===id)).filter(Boolean);
+  const single=state.dayAssignments[day];
+  if(single){const c=state.categories.find(x=>x.id===single);return c?[c]:[];}
+  return [];
+}
 // getMealsForDay — defined in plan mode section above
 function generateMenu(){
   const menu={};const used=new Set();
   DAYS.forEach(day=>{
+    // Primary pool: meals matching day's category/categories + rotation rule
     let pool=getMealsForDay(day).filter(m=>!used.has(m.id));
-    if(!pool.length){const c=state.dayAssignments[day];pool=state.meals.filter(m=>(!c||m.categories.includes(c))&&!used.has(m.id));}
-    if(!pool.length)pool=state.meals.filter(m=>!used.has(m.id));
-    if(pool.length){const c=pool[Math.floor(Math.random()*pool.length)];menu[day]=[c.id];used.add(c.id);}else menu[day]=[];
+    // Fallback 1: relax rotation, keep category filter
+    if(!pool.length){
+      const multi=(state.dayAssignmentMulti||{})[day];
+      const catId=state.dayAssignments[day];
+      pool=state.meals.filter(m=>{
+        const catMatch=multi&&multi.length>0
+          ?m.categories.some(cid=>multi.includes(cid))
+          :(!catId||m.categories.includes(catId));
+        return catMatch&&!used.has(m.id);
+      });
+    }
+    // Fallback 2: any meal at all
+    if(!pool.length) pool=state.meals.filter(m=>!used.has(m.id));
+    if(pool.length){const pick=pool[Math.floor(Math.random()*pool.length)];menu[day]=[pick.id];used.add(pick.id);}
+    else menu[day]=[];
   });
   state.currentMenu=menu;save();renderPlanner();
+}
+// Regenerate just one specific day
+function regenerateDay(day){
+  const used=new Set();
+  // Collect IDs used by other days so we don't duplicate
+  DAYS.forEach(d=>{
+    if(d===day)return;
+    (Array.isArray(state.currentMenu[d])?state.currentMenu[d]:[]).forEach(id=>used.add(id));
+  });
+  let pool=getMealsForDay(day).filter(m=>!used.has(m.id));
+  if(!pool.length){
+    const multi=(state.dayAssignmentMulti||{})[day];
+    const catId=state.dayAssignments[day];
+    pool=state.meals.filter(m=>{
+      const catMatch=multi&&multi.length>0
+        ?m.categories.some(cid=>multi.includes(cid))
+        :(!catId||m.categories.includes(catId));
+      return catMatch&&!used.has(m.id);
+    });
+  }
+  if(!pool.length) pool=state.meals.filter(m=>!used.has(m.id));
+  if(pool.length){
+    const pick=pool[Math.floor(Math.random()*pool.length)];
+    state.currentMenu[day]=[pick.id];
+  }
+  save();renderPlanner();
+  toast('🎲 '+day+' refreshed!');
 }
 function renderPlanner(){
   const grid=document.getElementById('week-grid');
@@ -1186,8 +1234,8 @@ function renderPlanner(){
   const mon=mondayOfWeek(state.currentWeekNum,state.currentYear);
   grid.innerHTML=DAYS.map((day,di)=>{
     const mealIds=Array.isArray(state.currentMenu[day])?state.currentMenu[day]:(state.currentMenu[day]?[state.currentMenu[day]]:[]);
-    const defCat=getCatForDay(day);
-    const catHtml=defCat?`<span class="day-category tag ${defCat.color}">${defCat.name}</span>`:'';
+    const dayCats=getCatsForDay(day);
+    const catHtml=dayCats.length?dayCats.map(c=>`<span class="day-category tag ${c.color}" style="margin-right:2px;">${c.name}</span>`).join(''):'';
     const dd=new Date(mon);dd.setDate(mon.getDate()+di);
     const isToday=state.currentWeekNum===todayWk&&state.currentYear===todayYr&&di===((new Date().getDay()||7)-1);
     const mealsHtml=mealIds.length
@@ -1210,7 +1258,8 @@ function renderPlanner(){
       ${catHtml}
       <div style="flex:1;">${mealsHtml}</div>
       <div class="day-actions" style="margin-top:6px;">
-        <button onclick="openSwapModal('${day}',-1)" style="flex:2;padding:5px 0;border-radius:6px;border:1px solid var(--teal);background:transparent;cursor:pointer;font-size:12px;color:var(--teal);" title="Add meal">+ Add meal</button>
+        <button onclick="openSwapModal('${day}',-1)" style="flex:2;padding:5px 0;border-radius:6px;border:1px solid var(--teal);background:transparent;cursor:pointer;font-size:12px;color:var(--teal);" title="Add meal">+ Add</button>
+        <button onclick="regenerateDay('${day}')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid var(--border-bright);background:transparent;cursor:pointer;font-size:13px;color:var(--text-soft);" title="Regenerate this day">🎲</button>
         <button onclick="clearDay('${day}')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:13px;color:var(--text-faint);" title="Clear day">✕</button>
       </div>
     </div>`;
