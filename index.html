@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Mise en Place v5 - Built: Sunday 22 March 2026 12:50 UTC -->
+<!-- Mise en Place v5 - Built: Sunday 22 March 2026 14:30 UTC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -646,6 +646,8 @@ header nav { display:none; }
         <button class="quick-chip" onclick="generateMenu()">🎲 Regenerate</button>
         <button class="quick-chip primary" id="accept-btn" onclick="acceptMenu()">✓ Accept</button>
         <button class="quick-chip" onclick="openAIDietPlanner()">🎯 AI Diet</button>
+        <button class="quick-chip" onclick="showPanel('history')">📚 History</button>
+        <button class="quick-chip" onclick="openDayCategoriesModal()">🗂 Set Days</button>
         <div style="display:flex;align-items:center;gap:0;background:var(--surface3);border-radius:20px;padding:2px;">
           <button id="mode-guided" onclick="setPlanMode('guided')" style="padding:5px 12px;border-radius:18px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;background:var(--accent);color:#fff;transition:all .15s;">🗂 Guided</button>
           <button id="mode-free" onclick="setPlanMode('free')" style="padding:5px 12px;border-radius:18px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;background:transparent;color:var(--text-faint);transition:all .15s;">🎲 Free</button>
@@ -669,6 +671,7 @@ header nav { display:none; }
         <label class="btn btn-outline" style="cursor:pointer;margin:0;">⬇ JSON<input type="file" accept=".json" style="display:none;" onchange="importData(this)"></label>
         <label class="btn btn-outline" style="cursor:pointer;margin:0;">📊 CSV / Excel<input type="file" accept=".csv,.xlsx,.xls" style="display:none;" onchange="importFile(this)"></label>
         <button class="btn btn-outline" id="bulk-edit-toggle-btn" onclick="toggleBulkMode()">☑ Bulk Edit</button>
+        <button class="btn btn-outline" onclick="openAddCategoryModal()">＋ Category</button>
         <button class="btn btn-primary" onclick="openMealModal()">+ Add Meal</button>
       </div>
     </div>
@@ -706,7 +709,10 @@ header nav { display:none; }
 
   <!-- STATS -->
   <div id="panel-stats" class="panel">
-    <div class="section-title">Stats & Insights</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="section-title">Stats & Insights</div>
+      <button class="btn btn-outline btn-sm" onclick="showPanel('history')">📚 History</button>
+    </div>
     <div class="section-sub">How your meal plan looks over time</div>
     <div class="stats-grid" id="stats-grid"></div>
     <div id="health-insights-wrap" style="margin-bottom:16px;"></div>
@@ -838,7 +844,7 @@ header nav { display:none; }
   </div>
 
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v5 · Built Sunday 22 March 2026 12:50 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Sunday 22 March 2026 14:30 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
@@ -871,6 +877,9 @@ header nav { display:none; }
 <div id="more-drawer" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border);z-index:151;padding:0 0 calc(16px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .28s cubic-bezier(0.4,0,0.2,1);">
   <div style="width:36px;height:4px;background:var(--border-bright);border-radius:2px;margin:12px auto 8px;"></div>
   <div style="padding:4px 20px 12px;font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;">More</div>
+  <button onclick="showPanel('history');closeMoreDrawer();" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:transparent;border:none;cursor:pointer;font-family:inherit;color:var(--text);font-size:14px;font-weight:500;transition:background .15s;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+    <span style="font-size:20px;">📚</span><div><div style="font-weight:600;">History</div><div style="font-size:11px;color:var(--text-faint);">Browse and edit past weekly menus</div></div>
+  </button>
   <button onclick="showPanel('stats');closeMoreDrawer();" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:transparent;border:none;cursor:pointer;font-family:inherit;color:var(--text);font-size:14px;font-weight:500;transition:background .15s;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
     <span style="font-size:20px;">📊</span><div><div style="font-weight:600;">Stats & Insights</div><div style="font-size:11px;color:var(--text-faint);">Usage stats and meal analytics</div></div>
   </button>
@@ -905,12 +914,64 @@ header nav { display:none; }
   </div>
 </div>
 
+
+<!-- DAY CATEGORIES MODAL -->
+<div class="modal-overlay" id="day-cat-modal">
+  <div class="modal" style="width:480px;">
+    <div class="modal-title">🗂 Set Daily Categories</div>
+    <p style="font-size:13px;color:var(--text-soft);margin-bottom:16px;">Assign a category to each day for Guided mode. Leave a day as <em>Any meal</em> to allow all categories.</p>
+    <div id="day-cat-assignments"></div>
+    <div class="modal-footer" style="margin-top:18px;">
+      <button class="btn btn-outline" onclick="closeDayCategoriesModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDayCategoriesModal()">✓ Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CATEGORY MODAL -->
+<div class="modal-overlay" id="add-cat-modal">
+  <div class="modal" style="width:400px;">
+    <div class="modal-title">＋ Add Category</div>
+    <p style="font-size:13px;color:var(--text-soft);margin-bottom:16px;">Create a new meal category. It will appear as a tag on your meals and can be assigned to days.</p>
+    <div style="margin-bottom:13px;">
+      <label>Category Name</label>
+      <input type="text" id="add-cat-name-input" placeholder="e.g. Fish, Soup, Pasta…" onkeydown="if(event.key==='Enter')saveNewCategory()">
+    </div>
+    <div style="margin-bottom:16px;">
+      <label>Colour</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;" id="add-cat-color-picker"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAddCategoryModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewCategory()">＋ Add Category</button>
+    </div>
+  </div>
+</div>
+
 <!-- MEAL MODAL -->
 <div class="modal-overlay" id="meal-modal">
   <div class="modal">
     <div class="modal-title" id="meal-modal-title">Add Meal</div>
     <div style="margin-bottom:13px;"><label>Meal Name *</label><input type="text" id="meal-name-input" placeholder="e.g. Chicken Stew"></div>
-    <div style="margin-bottom:13px;"><label>Categories</label><div class="chip-group" id="meal-cat-chips"></div></div>
+    <div style="margin-bottom:13px;">
+      <label>Categories</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+        <div class="chip-group" id="meal-cat-chips" style="flex:1;min-width:0;"></div>
+        <button type="button" onclick="toggleInlineCatForm()" 
+          style="flex-shrink:0;padding:4px 10px;border-radius:20px;border:1.5px dashed var(--border-bright);background:transparent;cursor:pointer;font-size:11px;font-weight:700;color:var(--accent2);white-space:nowrap;transition:all .15s;"
+          onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border-bright)'">＋ New</button>
+      </div>
+      <!-- Inline new category form — hidden by default -->
+      <div id="inline-cat-form" style="display:none;margin-top:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">New Category</div>
+        <div style="display:flex;gap:7px;margin-bottom:8px;">
+          <input type="text" id="inline-cat-name" placeholder="Category name…" style="flex:1;" onkeydown="if(event.key==='Enter')saveInlineCategory()">
+          <button class="btn btn-primary btn-sm" onclick="saveInlineCategory()">Add</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleInlineCatForm()">✕</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;" id="inline-cat-colors"></div>
+      </div>
+    </div>
     <div style="margin-bottom:13px;"><label>Ingredients (comma-separated)</label><input type="text" id="meal-ingredients-input" placeholder="e.g. chicken, onion, carrots"></div>
     <div style="margin-bottom:4px;"><label>Notes / Recipe Link</label><textarea id="meal-notes-input" rows="2" placeholder="Recipe URL or note…" style="resize:vertical;"></textarea></div>
     <div class="modal-footer">
@@ -1315,6 +1376,11 @@ function openMealModal(mealId){
   document.getElementById('meal-notes-input').value=m?(m.notes||''):'';
   document.getElementById('meal-cat-chips').innerHTML=state.categories.map(c=>`<button class="chip ${m&&m.categories.includes(c.id)?'selected':''}" data-id="${c.id}" onclick="this.classList.toggle('selected')">${c.name}</button>`).join('');
   document.getElementById('meal-modal').classList.add('open');
+  // Reset inline category form
+  const inlineForm = document.getElementById('inline-cat-form');
+  if(inlineForm) inlineForm.style.display = 'none';
+  const inlineName = document.getElementById('inline-cat-name');
+  if(inlineName) inlineName.value = '';
   setTimeout(()=>document.getElementById('meal-name-input').focus(),80);
 }
 function closeMealModal(){document.getElementById('meal-modal').classList.remove('open');}
@@ -1808,7 +1874,119 @@ function renderHealthInsights(){
   </div>`;
 }
 
-// ── TOAST & KEYBOARD ──────────────────────────────────────────
+
+// ── DAY CATEGORIES MODAL ──────────────────────────────────────
+function openDayCategoriesModal(){
+  const el = document.getElementById('day-cat-assignments');
+  if(el){
+    el.innerHTML = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(day=>`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="min-width:90px;font-size:13px;font-weight:600;color:var(--text-soft);">${day}</span>
+        <select id="daycat-${day}" style="flex:1;">
+          <option value="">— Any meal —</option>
+          ${state.categories.map(c=>`<option value="${c.id}" ${state.dayAssignments[day]===c.id?'selected':''}>${c.name}</option>`).join('')}
+        </select>
+      </div>`).join('');
+  }
+  document.getElementById('day-cat-modal').classList.add('open');
+}
+function closeDayCategoriesModal(){document.getElementById('day-cat-modal').classList.remove('open');}
+function saveDayCategoriesModal(){
+  ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].forEach(day=>{
+    const sel=document.getElementById('daycat-'+day);
+    if(sel) state.dayAssignments[day]=sel.value;
+  });
+  save();
+  closeDayCategoriesModal();
+  renderSettings();
+  toast('Day categories saved!');
+  generateMenu();
+}
+
+// ── ADD CATEGORY MODAL ────────────────────────────────────────
+function openAddCategoryModal(){
+  document.getElementById('add-cat-name-input').value='';
+  // Render colour picker
+  const picker=document.getElementById('add-cat-color-picker');
+  if(picker){
+    picker.innerHTML=CAT_COLORS.map((col,i)=>`
+      <button onclick="selectCatColor('${col}',this)" 
+        class="chip ${i===0?'selected':''}" 
+        data-color="${col}"
+        style="padding:5px 12px;font-size:11px;">
+        <span class="tag ${col}">${col.replace('cat-','')}</span>
+      </button>`).join('');
+    // auto-select first
+    picker.querySelector('button').classList.add('selected');
+  }
+  document.getElementById('add-cat-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('add-cat-name-input').focus(),80);
+}
+function closeAddCategoryModal(){document.getElementById('add-cat-modal').classList.remove('open');}
+function selectCatColor(col,btn){
+  document.querySelectorAll('#add-cat-color-picker button').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+function saveNewCategory(){
+  const name=document.getElementById('add-cat-name-input').value.trim();
+  if(!name){toast('Please enter a category name.');return;}
+  if(state.categories.find(c=>c.name.toLowerCase()===name.toLowerCase())){toast('Category already exists.');return;}
+  const selectedBtn=document.querySelector('#add-cat-color-picker button.selected');
+  const color=selectedBtn?selectedBtn.dataset.color:CAT_COLORS[state.categories.length%CAT_COLORS.length];
+  state.categories.push({id:'cat_'+Date.now(),name,color});
+  save();
+  closeAddCategoryModal();
+  renderMealList();
+  renderSettings();
+  toast('Category "'+name+'" added!');
+}
+
+// ── INLINE CATEGORY FORM (inside meal modal) ─────────────────
+function toggleInlineCatForm(){
+  const form = document.getElementById('inline-cat-form');
+  const isHidden = form.style.display === 'none';
+  form.style.display = isHidden ? 'block' : 'none';
+  if(isHidden){
+    // Populate colour picker
+    const colPicker = document.getElementById('inline-cat-colors');
+    if(colPicker) colPicker.innerHTML = CAT_COLORS.map((col,i)=>
+      `<button type="button" onclick="selectInlineCatColor('${col}',this)"
+        class="chip ${i===0?'selected':''}" data-color="${col}"
+        style="padding:3px 10px;font-size:11px;">
+        <span class="tag ${col}">${col.replace('cat-','')}</span>
+      </button>`).join('');
+    document.getElementById('inline-cat-name').focus();
+  }
+}
+function selectInlineCatColor(col, btn){
+  document.querySelectorAll('#inline-cat-colors button').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+function saveInlineCategory(){
+  const name = document.getElementById('inline-cat-name').value.trim();
+  if(!name){toast('Please enter a category name.');return;}
+  if(state.categories.find(c=>c.name.toLowerCase()===name.toLowerCase())){
+    toast('Category already exists.');return;
+  }
+  const selBtn = document.querySelector('#inline-cat-colors button.selected');
+  const color = selBtn ? selBtn.dataset.color : CAT_COLORS[state.categories.length % CAT_COLORS.length];
+  const newCat = {id:'cat_'+Date.now(), name, color};
+  state.categories.push(newCat);
+  save();
+  // Refresh category chips in meal modal and auto-select the new one
+  const m = editingMealId ? state.meals.find(m=>m.id===editingMealId) : null;
+  const currentSelected = Array.from(document.querySelectorAll('#meal-cat-chips .chip.selected')).map(c=>c.dataset.id);
+  document.getElementById('meal-cat-chips').innerHTML = state.categories.map(c=>
+    `<button type="button" class="chip ${(currentSelected.includes(c.id)||c.id===newCat.id)?'selected':''}" data-id="${c.id}" onclick="this.classList.toggle('selected')">${c.name}</button>`
+  ).join('');
+  // Close the inline form
+  document.getElementById('inline-cat-form').style.display = 'none';
+  document.getElementById('inline-cat-name').value = '';
+  renderSettings();
+  toast(`Category "${name}" added and selected!`);
+}
+
+// ── TOAST & KEYBOARD
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));});
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
