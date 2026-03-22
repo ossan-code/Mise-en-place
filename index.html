@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Mise en Place v5 - Built: Sunday 22 March 2026 14:30 UTC -->
+<!-- Mise en Place v5 - Built: Sunday 22 March 2026 16:00 UTC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -585,7 +585,7 @@ header nav { display:none; }
       <div style="position:absolute;top:-60px;right:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(108,99,255,0.18),transparent 70%);pointer-events:none;"></div>
       <div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">Welcome to</div>
       <div style="font-size:30px;font-weight:800;color:var(--text);letter-spacing:-0.03em;margin-bottom:6px;">Mise en Place</div>
-      <div style="font-size:14px;color:var(--text-soft);line-height:1.6;margin-bottom:20px;">Your personal weekly meal planner.<br>Plan smarter. Eat better. Stay balanced.</div>
+      <div style="font-size:14px;color:var(--text-soft);line-height:1.6;margin-bottom:20px;">Your personal weekly smart meal planner.<br>Plan smarter. Eat better. Stay balanced.</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="showPanel('planner')">Start Planning</button>
         <button class="btn btn-outline" onclick="showPanel('discover')">Discover Meals</button>
@@ -599,13 +599,13 @@ header nav { display:none; }
       </div>
       <div onclick="showPanel('discover')" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .18s;" onmouseover="this.style.borderColor='rgba(167,139,250,0.4)'" onmouseout="this.style.borderColor='var(--border)'">
         <div style="font-size:28px;margin-bottom:8px;">🤖</div>
-        <div style="font-weight:700;color:var(--text);font-size:13px;margin-bottom:4px;">AI Meal Discovery</div>
-        <div style="font-size:11px;color:var(--text-faint);line-height:1.5;">Ask AI to suggest new meals. Get recipes, ingredients and search links.</div>
+        <div style="font-weight:700;color:var(--text);font-size:13px;margin-bottom:4px;">Smart Meal Discovery</div>
+        <div style="font-size:11px;color:var(--text-faint);line-height:1.5;">Discover new meals with smart AI suggestions. Get recipes, ingredients and search links.</div>
       </div>
       <div onclick="openAIDietPlanner()" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .18s;" onmouseover="this.style.borderColor='rgba(34,211,238,0.4)'" onmouseout="this.style.borderColor='var(--border)'">
         <div style="font-size:28px;margin-bottom:8px;">🎯</div>
-        <div style="font-weight:700;color:var(--text);font-size:13px;margin-bottom:4px;">AI Diet Planner</div>
-        <div style="font-size:11px;color:var(--text-faint);line-height:1.5;">Get a personalised weekly category plan for your health goals.</div>
+        <div style="font-weight:700;color:var(--text);font-size:13px;margin-bottom:4px;">Smart Diet Planner</div>
+        <div style="font-size:11px;color:var(--text-faint);line-height:1.5;">Get a personalised weekly smart diet plan tailored to your health goals.</div>
       </div>
       <div onclick="showPanel('stats')" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .18s;" onmouseover="this.style.borderColor='rgba(52,211,153,0.4)'" onmouseout="this.style.borderColor='var(--border)'">
         <div style="font-size:28px;margin-bottom:8px;">📊</div>
@@ -645,7 +645,7 @@ header nav { display:none; }
       <div class="planner-hero-actions" style="margin-top:10px;">
         <button class="quick-chip" onclick="generateMenu()">🎲 Regenerate</button>
         <button class="quick-chip primary" id="accept-btn" onclick="acceptMenu()">✓ Accept</button>
-        <button class="quick-chip" onclick="openAIDietPlanner()">🎯 AI Diet</button>
+        <button class="quick-chip" onclick="openAIDietPlanner()">🎯 Smart Diet</button>
         <button class="quick-chip" onclick="showPanel('history')">📚 History</button>
         <button class="quick-chip" onclick="openDayCategoriesModal()">🗂 Set Days</button>
         <div style="display:flex;align-items:center;gap:0;background:var(--surface3);border-radius:20px;padding:2px;">
@@ -844,7 +844,7 @@ header nav { display:none; }
   </div>
 
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v5 · Built Sunday 22 March 2026 14:30 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Sunday 22 March 2026 16:00 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
@@ -899,14 +899,14 @@ header nav { display:none; }
 <!-- AI DIET PLANNER MODAL -->
 <div class="modal-overlay" id="ai-diet-modal">
   <div class="modal" style="width:520px;">
-    <div class="modal-title">🎯 AI Diet Planner</div>
+    <div class="modal-title">🎯 Smart Diet Planner</div>
     <p style="font-size:13px;color:var(--text-soft);margin-bottom:14px;">Describe your health goal and AI will suggest the best category plan for each day of your week.</p>
     <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;" id="diet-presets"></div>
     <div style="margin-bottom:12px;">
       <label>Your diet goal</label>
       <textarea id="diet-goal-input" rows="2" placeholder="e.g. I want to lose weight and reduce red meat&#10;I do sport 4 days a week and need more protein&#10;Heart friendly diet for the whole family" style="resize:none;"></textarea>
     </div>
-    <button class="btn btn-teal" id="diet-plan-btn" onclick="runAIDietPlan()" style="width:100%;margin-bottom:14px;">🎯 Generate Plan</button>
+    <button class="btn btn-teal" id="diet-plan-btn" onclick="runAIDietPlan()" style="width:100%;margin-bottom:14px;">🎯 Generate Smart Plan</button>
     <div id="diet-plan-output"></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeAIDietPlanner()">Close</button>
@@ -1714,6 +1714,14 @@ function getMealsForDay(day){
   const mode=state.planMode||'guided';
   const min=state.currentWeekNum-state.rotationWeeks;
   if(mode==='free') return state.meals.filter(m=>(m.lastUsedWeek||0)<=min);
+  // Check for multi-category assignment from Smart Diet Planner
+  const multiCats=(state.dayAssignmentMulti||{})[day];
+  if(multiCats&&multiCats.length>1){
+    // Return meals matching ANY of the assigned categories
+    return state.meals.filter(m=>
+      m.categories.some(cid=>multiCats.includes(cid)) && (m.lastUsedWeek||0)<=min
+    );
+  }
   const catId=state.dayAssignments[day];
   return state.meals.filter(m=>(!catId||m.categories.includes(catId))&&(m.lastUsedWeek||0)<=min);
 }
@@ -1807,12 +1815,23 @@ function applyDietPlan(planStr){
   let applied=0;
   DAYS_LIST.forEach(day=>{
     const d=plan.plan[day];if(!d||!d.categories||!d.categories.length)return;
-    const c=state.categories.find(x=>x.name.toLowerCase()===(d.categories[0]||'').toLowerCase());
-    if(c){state.dayAssignments[day]=c.id;applied++;}
+    // Support multiple categories per day — store as array
+    const catIds=d.categories.map(cn=>
+      (state.categories.find(x=>x.name.toLowerCase()===cn.toLowerCase())||{}).id
+    ).filter(Boolean);
+    if(catIds.length){
+      // Store multiple cats as comma-joined string for backward compat,
+      // but we also store the full array in dayAssignmentMulti
+      state.dayAssignments[day]=catIds[0]; // primary (for Settings display)
+      if(!state.dayAssignmentMulti) state.dayAssignmentMulti={};
+      state.dayAssignmentMulti[day]=catIds; // full list for smart planner
+      applied++;
+    }
   });
   save();closeAIDietPlanner();
   setPlanMode('guided');
-  toast('Applied! '+applied+' days updated with your diet plan.');
+  toast('Applied! '+applied+' days updated — '+
+    (Object.values(plan.plan||{}).some(d=>(d.categories||[]).length>1)?'multi-category days included.':''));
 }
 
 // ── HEALTH INSIGHTS ───────────────────────────────────────────
@@ -1892,9 +1911,14 @@ function openDayCategoriesModal(){
 }
 function closeDayCategoriesModal(){document.getElementById('day-cat-modal').classList.remove('open');}
 function saveDayCategoriesModal(){
+  if(!state.dayAssignmentMulti) state.dayAssignmentMulti={};
   ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].forEach(day=>{
     const sel=document.getElementById('daycat-'+day);
-    if(sel) state.dayAssignments[day]=sel.value;
+    if(sel){
+      state.dayAssignments[day]=sel.value;
+      // Clear multi-cat for this day when manually set
+      delete state.dayAssignmentMulti[day];
+    }
   });
   save();
   closeDayCategoriesModal();
