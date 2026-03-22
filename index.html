@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Mise en Place v5 - Built: Monday 23 March 2026 09:00 UTC -->
+<!-- Mise en Place v5 - Built: Monday 23 March 2026 11:00 UTC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -844,7 +844,7 @@ header nav { display:none; }
   </div>
 
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v5 · Built Monday 23 March 2026 09:00 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Monday 23 March 2026 11:00 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
@@ -1166,53 +1166,71 @@ function getCatsForDay(day){
   return [];
 }
 // getMealsForDay — defined in plan mode section above
-function generateMenu(){
-  const menu={};const used=new Set();
-  DAYS.forEach(day=>{
-    // Primary pool: meals matching day's category/categories + rotation rule
-    let pool=getMealsForDay(day).filter(m=>!used.has(m.id));
-    // Fallback 1: relax rotation, keep category filter
-    if(!pool.length){
-      const multi=(state.dayAssignmentMulti||{})[day];
-      const catId=state.dayAssignments[day];
-      pool=state.meals.filter(m=>{
-        const catMatch=multi&&multi.length>0
-          ?m.categories.some(cid=>multi.includes(cid))
-          :(!catId||m.categories.includes(catId));
-        return catMatch&&!used.has(m.id);
-      });
-    }
-    // Fallback 2: any meal at all
-    if(!pool.length) pool=state.meals.filter(m=>!used.has(m.id));
-    if(pool.length){const pick=pool[Math.floor(Math.random()*pool.length)];menu[day]=[pick.id];used.add(pick.id);}
-    else menu[day]=[];
-  });
-  state.currentMenu=menu;save();renderPlanner();
-}
-// Regenerate just one specific day
-function regenerateDay(day){
-  const used=new Set();
-  // Collect IDs used by other days so we don't duplicate
-  DAYS.forEach(d=>{
-    if(d===day)return;
-    (Array.isArray(state.currentMenu[d])?state.currentMenu[d]:[]).forEach(id=>used.add(id));
-  });
+// Pick meals for a day — one per category if multi-cat, one otherwise
+function pickMealsForDay(day, used){
+  const multi=(state.dayAssignmentMulti||{})[day];
+  const min=state.currentWeekNum-state.rotationWeeks;
+  const mode=state.planMode||'guided';
+  const picks=[];
+
+  if(mode!=='free' && multi && multi.length>1){
+    // Multi-category: pick one meal per category
+    multi.forEach(catId=>{
+      // Primary: matches this cat + rotation
+      let pool=state.meals.filter(m=>
+        m.categories.includes(catId) &&
+        (m.lastUsedWeek||0)<=min &&
+        !used.has(m.id) &&
+        !picks.includes(m.id)
+      );
+      // Fallback: matches cat, relax rotation
+      if(!pool.length) pool=state.meals.filter(m=>
+        m.categories.includes(catId) &&
+        !used.has(m.id) &&
+        !picks.includes(m.id)
+      );
+      // Fallback: any unused meal
+      if(!pool.length) pool=state.meals.filter(m=>!used.has(m.id)&&!picks.includes(m.id));
+      if(pool.length){
+        const pick=pool[Math.floor(Math.random()*pool.length)];
+        picks.push(pick.id);
+        used.add(pick.id);
+      }
+    });
+    return picks;
+  }
+
+  // Single category (or free mode)
   let pool=getMealsForDay(day).filter(m=>!used.has(m.id));
   if(!pool.length){
-    const multi=(state.dayAssignmentMulti||{})[day];
     const catId=state.dayAssignments[day];
-    pool=state.meals.filter(m=>{
-      const catMatch=multi&&multi.length>0
-        ?m.categories.some(cid=>multi.includes(cid))
-        :(!catId||m.categories.includes(catId));
-      return catMatch&&!used.has(m.id);
-    });
+    pool=state.meals.filter(m=>(!catId||m.categories.includes(catId))&&!used.has(m.id));
   }
   if(!pool.length) pool=state.meals.filter(m=>!used.has(m.id));
   if(pool.length){
     const pick=pool[Math.floor(Math.random()*pool.length)];
-    state.currentMenu[day]=[pick.id];
+    used.add(pick.id);
+    return [pick.id];
   }
+  return [];
+}
+
+function generateMenu(){
+  const menu={};const used=new Set();
+  DAYS.forEach(day=>{
+    menu[day]=pickMealsForDay(day,used);
+  });
+  state.currentMenu=menu;save();renderPlanner();
+}
+
+// Regenerate just one specific day (respects multi-category)
+function regenerateDay(day){
+  const used=new Set();
+  DAYS.forEach(d=>{
+    if(d===day)return;
+    (Array.isArray(state.currentMenu[d])?state.currentMenu[d]:[]).forEach(id=>used.add(id));
+  });
+  state.currentMenu[day]=pickMealsForDay(day,used);
   save();renderPlanner();
   toast('🎲 '+day+' refreshed!');
 }
@@ -1388,12 +1406,20 @@ function renderHistDetail(entry){
   const el=document.getElementById('history-detail');
   if(!entry){el.innerHTML='<div class="empty-state" style="padding:28px 16px;"><div class="icon">📅</div><p>Select a week from the calendar.<br><span style="color:var(--green);font-size:11px;">● Green dots = weeks with saved menus</span></p></div>';return;}
   const rows=DAYS.map(day=>{
-    const mids=Array.isArray(entry.menu[day])?entry.menu[day]:(entry.menu[day]?[entry.menu[day]]:[]);const meal=mids.length?state.meals.find(m=>m.id===mids[0]):null;
-    const cat=getCatForDay(day);
+    const mids=Array.isArray(entry.menu[day])?entry.menu[day]:(entry.menu[day]?[entry.menu[day]]:[]);
+    const cats=getCatsForDay(day);
+    const catsHtml=cats.map(c=>`<span class="tag ${c.color}" style="font-size:10px;margin-right:2px;">${c.name}</span>`).join('');
+    const mealsHtml=mids.map((mid,i)=>{
+      const m=state.meals.find(x=>x.id===mid);
+      if(!m) return '';
+      const mc=m.categories.length?state.categories.find(c=>m.categories.includes(c.id)):null;
+      const tag=mc?`<span class="tag ${mc.color}" style="font-size:9px;padding:1px 5px;margin-right:3px;">${mc.name}</span>`:'';
+      return `<div style="${i>0?'margin-top:5px;padding-top:5px;border-top:1px solid var(--border);':''}font-size:12px;color:var(--text);">${tag}${m.name}</div>`;
+    }).join('');
     return `<div style="background:var(--surface2);border-radius:8px;padding:9px 11px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px;">${day.slice(0,3)}</div>
-      ${cat?`<span class="tag ${cat.color}" style="font-size:10px;">${cat.name}</span>`:''}
-      <div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:13px;margin-top:3px;color:var(--text);">${meal?meal.name:'—'}</div>
+      ${catsHtml||''}
+      <div style="margin-top:4px;">${mealsHtml||'<span style="color:var(--text-faint);font-size:11px;">—</span>'}</div>
     </div>`;
   }).join('');
   el.innerHTML=`<div class="card">
