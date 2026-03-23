@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Mise en Place v5 - Built: Monday 23 March 2026 14:00 UTC -->
+<!-- Mise en Place v5 - Built: Monday 23 March 2026 16:00 UTC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -845,7 +845,7 @@ header nav { display:none; }
   </div>
 
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v5 · Built Monday 23 March 2026 14:00 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Monday 23 March 2026 16:00 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
@@ -1662,26 +1662,126 @@ function downloadTemplate(){const blob=new Blob(['Meal Name,Categories,Ingredien
 // ── SHOPPING LIST ─────────────────────────────────────────────
 let shopItems=[];
 function exportShoppingList(){
-  const ings=[];
-  DAYS.forEach(day=>{(Array.isArray(state.currentMenu[day])?state.currentMenu[day]:[]).forEach(mid=>{const meal=state.meals.find(m=>m.id===mid);if(meal?.ingredients?.length)ings.push(...meal.ingredients);});});
-  const unique=[...new Set(ings.map(i=>i.toLowerCase()))].sort();
-  const existingTexts=new Set(shopItems.map(i=>i.text.toLowerCase()));
-  unique.forEach(text=>{if(!existingTexts.has(text))shopItems.push({id:Date.now()+Math.random(),text,checked:false});});
-  renderShopList();document.getElementById('shopping-modal').classList.add('open');
+  // Build items grouped by day, with meal source info
+  const newItems=[];
+  const existingTexts=new Set(shopItems.filter(i=>i.section==='manual').map(i=>i.text.toLowerCase()));
+  const addedThisCall=new Set(shopItems.map(i=>i.text.toLowerCase()));
+
+  DAYS.forEach(day=>{
+    const mealIds=Array.isArray(state.currentMenu[day])?state.currentMenu[day]:(state.currentMenu[day]?[state.currentMenu[day]]:[]);
+    const dayIngs=[];
+    mealIds.forEach(mid=>{
+      const meal=state.meals.find(m=>m.id===mid);
+      if(!meal?.ingredients?.length) return;
+      meal.ingredients.forEach(ing=>{
+        const key=ing.toLowerCase().trim();
+        if(!addedThisCall.has(key)){
+          dayIngs.push({id:Date.now()+Math.random(),text:ing.trim(),checked:false,day,section:day,mealName:meal.name});
+          addedThisCall.add(key);
+        }
+      });
+    });
+    newItems.push(...dayIngs);
+  });
+
+  // Only add items not already in list
+  const existing=new Set(shopItems.map(i=>i.text.toLowerCase()));
+  newItems.forEach(item=>{if(!existing.has(item.text.toLowerCase()))shopItems.push(item);});
+
+  renderShopList();
+  document.getElementById('shopping-modal').classList.add('open');
   setTimeout(()=>document.getElementById('shop-new-item').focus(),100);
 }
 function renderShopList(){
   const el=document.getElementById('shopping-list-content');
-  if(!shopItems.length){el.innerHTML='<p style="color:var(--text-faint);font-size:13px;padding:8px 0;">No items yet. Add ingredients to meals or type manually above.</p>';return;}
-  el.innerHTML=shopItems.map(item=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);${item.checked?'opacity:.45;':''}">
-    <input type="checkbox" ${item.checked?'checked':''} style="width:auto;accent-color:var(--teal);cursor:pointer;flex-shrink:0;" onchange="shopToggle(${item.id},this.checked)">
-    <span style="flex:1;text-transform:capitalize;font-size:13px;color:var(--text-soft);${item.checked?'text-decoration:line-through;':''}" contenteditable="true" spellcheck="false" onblur="shopRename(${item.id},this.textContent)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${item.text}</span>
-    <button onclick="shopDelete(${item.id})" style="background:none;border:none;cursor:pointer;color:var(--text-faint);font-size:16px;line-height:1;padding:0 2px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-faint)'">×</button>
-  </div>`).join('');
+  if(!shopItems.length){
+    el.innerHTML='<p style="color:var(--text-faint);font-size:13px;padding:8px 0;">No items yet. Add ingredients to meals or type manually above.</p>';
+    return;
+  }
+
+  // Group items by section (day or 'manual')
+  const sections=[];
+  const seen=new Set();
+  // First pass: collect section order (days in week order, then manual)
+  const sectionOrder=[...DAYS,'manual'];
+  sectionOrder.forEach(sec=>{
+    const items=shopItems.filter(i=>(i.section||'manual')===sec);
+    if(items.length) sections.push({sec,items});
+  });
+  // Any items without a known section go into manual
+  const otherItems=shopItems.filter(i=>!i.section||(!DAYS.includes(i.section)&&i.section!=='manual'));
+  if(otherItems.length){
+    const manualSec=sections.find(s=>s.sec==='manual');
+    if(manualSec) manualSec.items.push(...otherItems);
+    else sections.push({sec:'manual',items:otherItems});
+  }
+
+  const weekLbl=weekLabel(state.currentWeekNum,state.currentYear);
+  const mon=mondayOfWeek(state.currentWeekNum,state.currentYear);
+
+  let html='';
+
+  // Week banner at top
+  html+=`<div style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(34,211,238,0.08));border:1px solid rgba(108,99,255,0.2);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+    <span style="font-size:16px;">🗓</span>
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;">Week of ${weekLbl}</div>
+      <div style="font-size:11px;color:var(--text-faint);">${shopItems.filter(i=>!i.checked).length} items remaining · ${shopItems.filter(i=>i.checked).length} checked</div>
+    </div>
+  </div>`;
+
+  sections.forEach((group,gi)=>{
+    const {sec,items}=group;
+    const isDay=DAYS.includes(sec);
+
+    // Section header
+    if(isDay){
+      // Get date for this day
+      const di=DAYS.indexOf(sec);
+      const dd=new Date(mon);dd.setDate(mon.getDate()+di);
+      const dateStr=dd.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
+      // Get meal names for this day
+      const mealNames=[...new Set(items.filter(i=>i.mealName).map(i=>i.mealName))];
+      const mealStr=mealNames.length?mealNames.join(', '):'';
+      html+=`<div style="display:flex;align-items:baseline;gap:8px;margin-top:${gi>0?'14':'4'}px;margin-bottom:6px;">
+        <span style="font-size:11px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:.08em;">${sec}</span>
+        <span style="font-size:10px;color:var(--text-faint);">${dateStr.split(',')[1]||''}</span>
+        ${mealStr?`<span style="font-size:10px;color:var(--accent2);flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🍽 ${mealStr}</span>`:''}
+      </div>`;
+    } else {
+      html+=`<div style="display:flex;align-items:center;gap:8px;margin-top:${gi>0?'14':'4'}px;margin-bottom:6px;">
+        <span style="font-size:11px;font-weight:800;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;">Added Manually</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>`;
+    }
+
+    // Divider line before section (except first)
+    if(gi>0&&isDay){
+      // Add subtle separator between days
+      html=html.replace(
+        `<div style="display:flex;align-items:baseline;gap:8px;margin-top:14px`,
+        `<div style="height:1px;background:var(--border);margin:12px 0 2px;"></div><div style="display:flex;align-items:baseline;gap:8px;margin-top:4px`
+      );
+    }
+
+    // Items
+    items.forEach(item=>{
+      html+=`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);margin-bottom:3px;${item.checked?'opacity:.45;':''}">
+        <input type="checkbox" ${item.checked?'checked':''} style="width:auto;accent-color:var(--teal);cursor:pointer;flex-shrink:0;" onchange="shopToggle(${item.id},this.checked)">
+        <span style="flex:1;text-transform:capitalize;font-size:13px;color:var(--text-soft);${item.checked?'text-decoration:line-through;':''}" contenteditable="true" spellcheck="false" onblur="shopRename(${item.id},this.textContent)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${item.text}</span>
+        <button onclick="shopDelete(${item.id})" style="background:none;border:none;cursor:pointer;color:var(--text-faint);font-size:16px;line-height:1;padding:0 2px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-faint)'">×</button>
+      </div>`;
+    });
+  });
+
+  el.innerHTML=html;
 }
 function shopAddItem(){
   const inp=document.getElementById('shop-new-item');const text=inp.value.trim();if(!text)return;
-  text.split(',').map(s=>s.trim()).filter(Boolean).forEach(t=>{if(!shopItems.some(i=>i.text.toLowerCase()===t.toLowerCase()))shopItems.push({id:Date.now()+Math.random(),text:t,checked:false});});
+  text.split(',').map(s=>s.trim()).filter(Boolean).forEach(t=>{
+    if(!shopItems.some(i=>i.text.toLowerCase()===t.toLowerCase()))
+      shopItems.push({id:Date.now()+Math.random(),text:t,checked:false,section:'manual'});
+  });
   inp.value='';renderShopList();inp.focus();
 }
 function shopToggle(id,checked){const i=shopItems.find(i=>i.id===id);if(i)i.checked=checked;renderShopList();}
@@ -1690,9 +1790,24 @@ function shopDelete(id){shopItems=shopItems.filter(i=>i.id!==id);renderShopList(
 function shopClearChecked(){shopItems=shopItems.filter(i=>!i.checked);renderShopList();}
 function shopCheckAll(v){shopItems.forEach(i=>i.checked=v);renderShopList();}
 function copyShoppingList(all){
-  const items=all?shopItems.map(i=>(i.checked?'☑ ':'☐ ')+i.text):shopItems.filter(i=>!i.checked).map(i=>i.text);
-  if(!items.length){toast('Nothing to copy!');return;}
-  navigator.clipboard.writeText(items.join('\n')).then(()=>toast(`📋 Copied ${items.length} item${items.length!==1?'s':''}!`));
+  const target=all?shopItems:shopItems.filter(i=>!i.checked);
+  if(!target.length){toast('Nothing to copy!');return;}
+  // Group by section for copy output
+  let lines=[];
+  const weekLbl=weekLabel(state.currentWeekNum,state.currentYear);
+  lines.push(`🛒 Shopping List — Week of ${weekLbl}`);
+  lines.push('');
+  const sectionOrder=[...DAYS,'manual'];
+  sectionOrder.forEach(sec=>{
+    const items=target.filter(i=>(i.section||'manual')===sec);
+    if(!items.length)return;
+    const header=DAYS.includes(sec)?`── ${sec} ──`:`── Added Manually ──`;
+    lines.push(header);
+    items.forEach(i=>lines.push((all?(i.checked?'☑ ':'☐ '):'')+i.text));
+    lines.push('');
+  });
+  const text=lines.join('\n').trim();
+  navigator.clipboard.writeText(text).then(()=>toast(`📋 Copied ${target.length} item${target.length!==1?'s':''}!`));
 }
 function closeShoppingModal(){document.getElementById('shopping-modal').classList.remove('open');shopItems=[];}
 
