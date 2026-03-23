@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Mise en Place v5 - Built: Monday 23 March 2026 11:00 UTC -->
+<!-- Mise en Place v5 - Built: Monday 23 March 2026 14:00 UTC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -642,6 +642,7 @@ header nav { display:none; }
       <div class="planner-hero-week" id="current-week-label">Loading…</div>
       <div style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:-0.03em;">Weekly Menu</div>
       <span id="editing-badge-planner" style="display:none;" class="editing-badge">✏️ Editing history</span>
+      <div id="active-diet-badge" style="display:none;margin-top:8px;"></div>
       <div class="planner-hero-actions" style="margin-top:10px;">
         <button class="quick-chip" onclick="generateMenu()">🎲 Regenerate</button>
         <button class="quick-chip primary" id="accept-btn" onclick="acceptMenu()">✓ Accept</button>
@@ -844,7 +845,7 @@ header nav { display:none; }
   </div>
 
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v5 · Built Monday 23 March 2026 11:00 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Monday 23 March 2026 14:00 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
@@ -1245,6 +1246,7 @@ function renderPlanner(){
   const lbl=document.getElementById('current-week-label');
   const badge=document.getElementById('editing-badge-planner');
   const btn=document.getElementById('accept-btn');
+  renderActiveDietBadge();
   lbl.textContent=`Week of ${weekLabel(state.currentWeekNum,state.currentYear)}  ·  Week ${state.currentWeekNum}, ${state.currentYear}`;
   const isHist=!!state.editingHistoryId;
   badge.style.display=isHist?'':'none';
@@ -1309,7 +1311,7 @@ function acceptMenu(){
     state.editingHistoryId=null;save();toast('✅ Historical menu saved!');
     state.currentWeekNum=isoWeek(new Date());state.currentYear=new Date().getFullYear();state.currentMenu={};generateMenu();return;
   }
-  const entry={id:Date.now(),weekNum:state.currentWeekNum,year:state.currentYear,weekLabel:weekLabel(state.currentWeekNum,state.currentYear),date:new Date().toLocaleDateString(),menu:{...state.currentMenu}};
+  const entry={id:Date.now(),weekNum:state.currentWeekNum,year:state.currentYear,weekLabel:weekLabel(state.currentWeekNum,state.currentYear),date:new Date().toLocaleDateString(),menu:{...state.currentMenu},dietPlan:state.activeDiet?{goal:state.activeDiet.goal,summary:state.activeDiet.summary}:null};
   DAYS.forEach(day=>{(Array.isArray(state.currentMenu[day])?state.currentMenu[day]:[]).forEach(mid=>{const m=state.meals.find(m=>m.id===mid);if(m)m.lastUsedWeek=state.currentWeekNum;});});
   state.menuHistory=state.menuHistory.filter(e=>!(e.weekNum===state.currentWeekNum&&e.year===state.currentYear));
   state.menuHistory.unshift(entry);state.menuHistory.sort((a,b)=>(b.year*100+b.weekNum)-(a.year*100+a.weekNum));
@@ -1436,17 +1438,27 @@ function renderHistDetail(entry){
       <div style="margin-top:4px;">${mealsHtml||'<span style="color:var(--text-faint);font-size:11px;">—</span>'}</div>
     </div>`;
   }).join('');
+  const dietBadgeHtml = entry.dietPlan ? `
+    <div style="background:linear-gradient(135deg,rgba(34,211,238,0.08),rgba(108,99,255,0.08));border:1px solid rgba(34,211,238,0.25);border-radius:8px;padding:9px 12px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;">
+      <span style="font-size:18px;flex-shrink:0;">🎯</span>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">Smart Diet Plan</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text);">${entry.dietPlan.goal}</div>
+        ${entry.dietPlan.summary?`<div style="font-size:11px;color:var(--text-faint);margin-top:3px;line-height:1.5;">${entry.dietPlan.summary}</div>`:''}
+      </div>
+    </div>` : '';
   el.innerHTML=`<div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;flex-wrap:wrap;gap:8px;">
       <div>
-        <div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:17px;color:var(--text);">Week of ${entry.weekLabel}</div>
-        <div style="font-size:12px;color:var(--text-faint);margin-top:2px;">Accepted ${entry.date}${entry.edited?' · Edited':''}</div>
+        <div style="font-size:17px;font-weight:700;color:var(--text);">Week of ${entry.weekLabel}</div>
+        <div style="font-size:12px;color:var(--text-faint);margin-top:2px;">Accepted ${entry.date}${entry.edited?' · Edited':''}${entry.dietPlan?' · 🎯 Smart Diet':''}</div>
       </div>
       <div style="display:flex;gap:7px;">
         <button class="btn btn-outline btn-sm" onclick="editHistEntry(${entry.id})">✏️ Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteHistEntry(${entry.id})">🗑 Delete</button>
       </div>
     </div>
+    ${dietBadgeHtml}
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:7px;">${rows}</div>
   </div>`;
 }
@@ -1904,23 +1916,69 @@ function applyDietPlan(planStr){
   let applied=0;
   DAYS_LIST.forEach(day=>{
     const d=plan.plan[day];if(!d||!d.categories||!d.categories.length)return;
-    // Support multiple categories per day — store as array
     const catIds=d.categories.map(cn=>
       (state.categories.find(x=>x.name.toLowerCase()===cn.toLowerCase())||{}).id
     ).filter(Boolean);
     if(catIds.length){
-      // Store multiple cats as comma-joined string for backward compat,
-      // but we also store the full array in dayAssignmentMulti
-      state.dayAssignments[day]=catIds[0]; // primary (for Settings display)
+      state.dayAssignments[day]=catIds[0];
       if(!state.dayAssignmentMulti) state.dayAssignmentMulti={};
-      state.dayAssignmentMulti[day]=catIds; // full list for smart planner
+      state.dayAssignmentMulti[day]=catIds;
       applied++;
     }
   });
+  // Store active diet info in state so planner and history can show it
+  const goalText = (document.getElementById('diet-goal-input')||{}).value||'Smart Diet Plan';
+  state.activeDiet = {
+    goal: goalText.trim(),
+    summary: plan.summary||'',
+    tips: plan.tips||[],
+    appliedDate: new Date().toLocaleDateString(),
+    appliedWeek: state.currentWeekNum,
+    appliedYear: state.currentYear
+  };
   save();closeAIDietPlanner();
   setPlanMode('guided');
-  toast('Applied! '+applied+' days updated — '+
-    (Object.values(plan.plan||{}).some(d=>(d.categories||[]).length>1)?'multi-category days included.':''));
+  renderActiveDietBadge();
+  toast('✅ Smart Diet Plan applied to your week!');
+}
+
+function renderActiveDietBadge(){
+  const el = document.getElementById('active-diet-badge');
+  if(!el) return;
+  const d = state.activeDiet;
+  if(!d || d.appliedWeek !== state.currentWeekNum || d.appliedYear !== state.currentYear){
+    el.style.display='none'; return;
+  }
+  el.style.display='block';
+  el.innerHTML=`
+    <div style="background:linear-gradient(135deg,rgba(34,211,238,0.1),rgba(108,99,255,0.1));border:1px solid rgba(34,211,238,0.3);border-radius:10px;padding:10px 14px;cursor:pointer;" onclick="toggleDietSummary()">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">🎯</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;">Active Smart Diet Plan</div>
+          <div style="font-size:12px;color:var(--text-soft);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.goal}</div>
+        </div>
+        <span id="diet-summary-arrow" style="color:var(--text-faint);font-size:12px;transition:transform .2s;">▼</span>
+      </div>
+      <div id="diet-summary-body" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(34,211,238,0.2);">
+        <div style="font-size:12px;color:var(--text-soft);line-height:1.6;margin-bottom:8px;">${d.summary}</div>
+        ${(d.tips||[]).length?`<div style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Tips</div>`+d.tips.map(t=>`<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:var(--teal);">✓</span><span style="font-size:12px;color:var(--text-soft);">${t}</span></div>`).join(''):''}
+        <button class="btn btn-danger btn-sm" style="margin-top:8px;" onclick="event.stopPropagation();clearActiveDiet()">✕ Remove Diet Plan</button>
+      </div>
+    </div>`;
+}
+function toggleDietSummary(){
+  const body=document.getElementById('diet-summary-body');
+  const arrow=document.getElementById('diet-summary-arrow');
+  if(!body)return;
+  const open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  if(arrow)arrow.style.transform=open?'rotate(180deg)':'rotate(0deg)';
+}
+function clearActiveDiet(){
+  state.activeDiet=null;
+  save();renderActiveDietBadge();
+  toast('Diet plan removed.');
 }
 
 // ── HEALTH INSIGHTS ───────────────────────────────────────────
