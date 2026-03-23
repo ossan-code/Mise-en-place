@@ -1157,8 +1157,13 @@ function closeMoreDrawer(){
 }
 
 // ── PLANNER ───────────────────────────────────────────────────
-function getCatForDay(day){const id=state.dayAssignments[day];return state.categories.find(c=>c.id===id)||null;}
+function getCatForDay(day){
+  if((state.planMode||'guided')==='free') return null;
+  const id=state.dayAssignments[day];return state.categories.find(c=>c.id===id)||null;
+}
 function getCatsForDay(day){
+  // In Free mode never show category tags on day cards
+  if((state.planMode||'guided')==='free') return [];
   // Returns array of categories — supports multi-cat from Smart Diet Planner
   const multi=(state.dayAssignmentMulti||{})[day];
   if(multi&&multi.length>0) return multi.map(id=>state.categories.find(c=>c.id===id)).filter(Boolean);
