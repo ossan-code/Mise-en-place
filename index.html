@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Mise en Place v5 - Built: Monday 23 March 2026 16:00 UTC -->
+<!-- Mise en Place v5 - Built: Wednesday 25 March 2026 12:00 UTC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -205,7 +205,7 @@ main{
   border-color:rgba(34,211,238,0.4);
   box-shadow:0 0 0 1px rgba(34,211,238,0.15),var(--shadow);
 }
-.day-name{font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);margin-bottom:3px;}
+.day-name{font-weight:800;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent2);margin-bottom:3px;}
 .day-date-label{font-size:10px;color:var(--text-faint);margin-bottom:5px;}
 .day-category{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:7px;letter-spacing:.02em;}
 .day-meal{font-size:13px;font-weight:600;line-height:1.35;color:var(--text);margin-bottom:5px;flex:1;letter-spacing:-0.01em;}
@@ -643,15 +643,33 @@ header nav { display:none; }
       <div style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:-0.03em;">Weekly Menu</div>
       <span id="editing-badge-planner" style="display:none;" class="editing-badge">✏️ Editing history</span>
       <div id="active-diet-badge" style="display:none;margin-top:8px;"></div>
-      <div class="planner-hero-actions" style="margin-top:10px;">
+      <div class="planner-hero-actions" style="margin-top:10px;position:relative;">
         <button class="quick-chip" onclick="generateMenu()">🎲 Regenerate</button>
         <button class="quick-chip primary" id="accept-btn" onclick="acceptMenu()">✓ Accept</button>
-        <button class="quick-chip" onclick="openAIDietPlanner()">🎯 Smart Diet</button>
-        <button class="quick-chip" onclick="showPanel('history')">📚 History</button>
-        <button class="quick-chip" onclick="openDayCategoriesModal()">🗂 Set Days</button>
-        <div style="display:flex;align-items:center;gap:0;background:var(--surface3);border-radius:20px;padding:2px;">
-          <button id="mode-guided" onclick="setPlanMode('guided')" style="padding:5px 12px;border-radius:18px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;background:var(--accent);color:#fff;transition:all .15s;">🗂 Guided</button>
-          <button id="mode-free" onclick="setPlanMode('free')" style="padding:5px 12px;border-radius:18px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;background:transparent;color:var(--text-faint);transition:all .15s;">🎲 Free</button>
+        <button class="quick-chip" onclick="togglePlannerMenu(event)" id="planner-menu-btn" title="More options">⋯ More</button>
+        <!-- Planner dropdown menu -->
+        <div id="planner-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;background:var(--surface);border:1px solid var(--border-bright);border-radius:14px;padding:6px;min-width:220px;box-shadow:var(--shadow-lg);">
+          <button onclick="openAIDietPlanner();closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);border-radius:8px;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+            <span>🎯</span><div><div style="font-weight:600;">Smart Diet Plan</div><div style="font-size:11px;color:var(--text-faint);">AI personalised weekly plan</div></div>
+          </button>
+          <button onclick="openDayCategoriesModal();closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);border-radius:8px;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+            <span>🗂</span><div><div style="font-weight:600;">Set Day Categories</div><div style="font-size:11px;color:var(--text-faint);">Assign categories to days</div></div>
+          </button>
+          <button onclick="showPanel('history');closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);border-radius:8px;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+            <span>📚</span><div><div style="font-weight:600;">History</div><div style="font-size:11px;color:var(--text-faint);">Browse past menus</div></div>
+          </button>
+          <button onclick="openShareWeek();closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);border-radius:8px;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+            <span>📤</span><div><div style="font-weight:600;">Share This Week</div><div style="font-size:11px;color:var(--text-faint);">Copy or share your meal plan</div></div>
+          </button>
+          <button onclick="exportCalendar();closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);border-radius:8px;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+            <span>📅</span><div><div style="font-weight:600;">Add to Calendar</div><div style="font-size:11px;color:var(--text-faint);">Export .ics file</div></div>
+          </button>
+          <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">
+          <div style="padding:8px 12px 4px;font-size:11px;color:var(--text-faint);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Planning Mode</div>
+          <div style="display:flex;gap:0;margin:4px 8px 6px;background:var(--surface3);border-radius:20px;padding:2px;">
+            <button id="mode-guided" onclick="setPlanMode('guided')" style="flex:1;padding:6px 12px;border-radius:18px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;background:var(--accent);color:#fff;transition:all .15s;">🗂 Guided</button>
+            <button id="mode-free" onclick="setPlanMode('free')" style="flex:1;padding:6px 12px;border-radius:18px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;background:transparent;color:var(--text-faint);transition:all .15s;">🎲 Free</button>
+          </div>
         </div>
       </div>
     </div>
@@ -844,7 +862,7 @@ header nav { display:none; }
   </div>
 
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v5 · Built Monday 23 March 2026 16:00 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Wednesday 25 March 2026 12:00 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
@@ -912,7 +930,16 @@ header nav { display:none; }
       <label>Your diet goal</label>
       <textarea id="diet-goal-input" rows="2" placeholder="e.g. I want to lose weight and reduce red meat&#10;I do sport 4 days a week and need more protein&#10;Heart friendly diet for the whole family" style="resize:none;"></textarea>
     </div>
-    <button class="btn btn-teal" id="diet-plan-btn" onclick="runAIDietPlan()" style="width:100%;margin-bottom:14px;">🎯 Generate Smart Plan</button>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
+      <div style="flex:1;">
+        <label style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;display:block;">Meals per day</label>
+        <div style="display:flex;gap:0;background:var(--surface3);border-radius:20px;padding:2px;width:fit-content;">
+          <button id="mpd-1" onclick="setMealsPerDay(1)" style="padding:6px 16px;border-radius:18px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;background:var(--accent);color:#fff;transition:all .15s;">1</button>
+          <button id="mpd-2" onclick="setMealsPerDay(2)" style="padding:6px 16px;border-radius:18px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;background:transparent;color:var(--text-faint);transition:all .15s;">2</button>
+        </div>
+      </div>
+      <button class="btn btn-teal" id="diet-plan-btn" onclick="runAIDietPlan()" style="flex:1;">🎯 Generate Smart Plan</button>
+    </div>
     <div id="diet-plan-output"></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeAIDietPlanner()">Close</button>
@@ -1457,8 +1484,6 @@ function renderHistDetail(entry){
   if(!entry){el.innerHTML='<div class="empty-state" style="padding:28px 16px;"><div class="icon">📅</div><p>Select a week from the calendar.<br><span style="color:var(--green);font-size:11px;">● Green dots = weeks with saved menus</span></p></div>';return;}
   const rows=DAYS.map(day=>{
     const mids=Array.isArray(entry.menu[day])?entry.menu[day]:(entry.menu[day]?[entry.menu[day]]:[]);
-    const cats=getCatsForDay(day);
-    const catsHtml=cats.map(c=>`<span class="tag ${c.color}" style="font-size:10px;margin-right:2px;">${c.name}</span>`).join('');
     const mealsHtml=mids.map((mid,i)=>{
       const m=state.meals.find(x=>x.id===mid);
       if(!m) return '';
@@ -1467,9 +1492,8 @@ function renderHistDetail(entry){
       return `<div style="${i>0?'margin-top:5px;padding-top:5px;border-top:1px solid var(--border);':''}font-size:12px;color:var(--text);">${tag}${m.name}</div>`;
     }).join('');
     return `<div style="background:var(--surface2);border-radius:8px;padding:9px 11px;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px;">${day.slice(0,3)}</div>
-      ${catsHtml||''}
-      <div style="margin-top:4px;">${mealsHtml||'<span style="color:var(--text-faint);font-size:11px;">—</span>'}</div>
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:var(--accent2);margin-bottom:4px;">${day.slice(0,3)}</div>
+      <div>${mealsHtml||'<span style="color:var(--text-faint);font-size:11px;">—</span>'}</div>
     </div>`;
   }).join('');
   const dietBadgeHtml = entry.dietPlan ? `
@@ -1487,7 +1511,8 @@ function renderHistDetail(entry){
         <div style="font-size:17px;font-weight:700;color:var(--text);">Week of ${entry.weekLabel}</div>
         <div style="font-size:12px;color:var(--text-faint);margin-top:2px;">Accepted ${entry.date}${entry.edited?' · Edited':''}${entry.dietPlan?' · 🎯 Smart Diet':''}</div>
       </div>
-      <div style="display:flex;gap:7px;">
+      <div style="display:flex;gap:7px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="shareHistEntry(${entry.id})">📤 Share</button>
         <button class="btn btn-outline btn-sm" onclick="editHistEntry(${entry.id})">✏️ Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteHistEntry(${entry.id})">🗑 Delete</button>
       </div>
@@ -1948,7 +1973,9 @@ function exportCalendar(){
     const meals = mealIds.map(id => state.meals.find(m => m.id === id)).filter(Boolean);
     if(!meals.length) return;
 
-    const dateStr = dd.toISOString().slice(0,10).replace(/-/g,'');
+    // Use local date formatting to avoid UTC timezone shift
+    const pad=n=>String(n).padStart(2,'0');
+    const dateStr = `${dd.getFullYear()}${pad(dd.getMonth()+1)}${pad(dd.getDate())}`;
     const mealNames = meals.map(m => m.name).join(', ');
     const cats = getCatsForDay(day);
     const catStr = cats.length ? ' [' + cats.map(c => c.name).join('+') + ']' : '';
@@ -1970,7 +1997,8 @@ function exportCalendar(){
 
   // Add a weekly shopping list event on Monday
   const shopMon = new Date(mon);
-  const monStr = shopMon.toISOString().slice(0,10).replace(/-/g,'');
+  const pad2=n=>String(n).padStart(2,'0');
+  const monStr = `${shopMon.getFullYear()}${pad2(shopMon.getMonth()+1)}${pad2(shopMon.getDate())}`;
   const ings = [];
   DAYS.forEach(d => (Array.isArray(state.currentMenu[d])?state.currentMenu[d]:[]).forEach(mid=>{
     const m=state.meals.find(x=>x.id===mid);if(m?.ingredients?.length)ings.push(...m.ingredients);
@@ -2167,7 +2195,7 @@ async function runAIDietPlan(){
   out.innerHTML='<div style="color:var(--text-faint);font-size:13px;padding:10px 0;">Creating your personalised weekly plan…</div>';
   const catNames=state.categories.map(c=>c.name).join(', ');
   const prompt=`You are a nutrition expert. The user has these meal categories: ${catNames}. Their goal: "${goal}".
-Create a 7-day weekly meal category plan. Return ONLY valid JSON:
+Create a 7-day weekly meal category plan. The user wants ${dietMealsPerDay} meal(s) per day. For ${dietMealsPerDay===2?"each day provide 2 categories (one per meal)":"each day provide 1 category"}. Return ONLY valid JSON:
 {"summary":"2-3 sentences how this plan helps","tips":["tip1","tip2","tip3"],"plan":{"Monday":{"categories":["cat"],"reason":"why"},"Tuesday":{"categories":["cat"],"reason":"why"},"Wednesday":{"categories":["cat"],"reason":"why"},"Thursday":{"categories":["cat"],"reason":"why"},"Friday":{"categories":["cat"],"reason":"why"},"Saturday":{"categories":["cat1","cat2"],"reason":"why"},"Sunday":{"categories":["cat"],"reason":"why"}}}
 Use ONLY category names from: ${catNames}. No markdown.`;
   try{
@@ -2217,13 +2245,16 @@ function applyDietPlan(planStr){
   let applied=0;
   DAYS_LIST.forEach(day=>{
     const d=plan.plan[day];if(!d||!d.categories||!d.categories.length)return;
-    const catIds=d.categories.map(cn=>
+    const allCatIds=d.categories.map(cn=>
       (state.categories.find(x=>x.name.toLowerCase()===cn.toLowerCase())||{}).id
     ).filter(Boolean);
+    // Respect mealsPerDay setting
+    const catIds=allCatIds.slice(0,dietMealsPerDay);
     if(catIds.length){
       state.dayAssignments[day]=catIds[0];
       if(!state.dayAssignmentMulti) state.dayAssignmentMulti={};
-      state.dayAssignmentMulti[day]=catIds;
+      if(catIds.length>1) state.dayAssignmentMulti[day]=catIds;
+      else delete (state.dayAssignmentMulti||{})[day]; // single meal — clear multi
       applied++;
     }
   });
@@ -2456,6 +2487,56 @@ function saveInlineCategory(){
   document.getElementById('inline-cat-name').value = '';
   renderSettings();
   toast(`Category "${name}" added and selected!`);
+}
+
+
+// ── PLANNER DROPDOWN MENU ─────────────────────────────────────
+function togglePlannerMenu(e){
+  e.stopPropagation();
+  const d=document.getElementById('planner-dropdown');
+  d.style.display=d.style.display==='none'?'block':'none';
+}
+function closePlannerMenu(){
+  const d=document.getElementById('planner-dropdown');
+  if(d)d.style.display='none';
+}
+document.addEventListener('click',function(e){
+  const d=document.getElementById('planner-dropdown');
+  const btn=document.getElementById('planner-menu-btn');
+  if(d&&btn&&!d.contains(e.target)&&e.target!==btn)d.style.display='none';
+});
+
+// ── MEALS PER DAY (Smart Diet) ────────────────────────────────
+let dietMealsPerDay=1;
+function setMealsPerDay(n){
+  dietMealsPerDay=n;
+  document.getElementById('mpd-1').style.background=n===1?'var(--accent)':'transparent';
+  document.getElementById('mpd-1').style.color=n===1?'#fff':'var(--text-faint)';
+  document.getElementById('mpd-2').style.background=n===2?'var(--accent)':'transparent';
+  document.getElementById('mpd-2').style.color=n===2?'#fff':'var(--text-faint)';
+}
+
+// ── SHARE HISTORY ENTRY ───────────────────────────────────────
+function shareHistEntry(entryId){
+  const entry=state.menuHistory.find(e=>e.id==entryId);
+  if(!entry){toast('Entry not found.');return;}
+  const diet=entry.dietPlan?`\n🎯 Diet: ${entry.dietPlan.goal}`:'';
+  let lines=[`🍽️ Meal Plan — Week of ${entry.weekLabel}${diet}`,`Accepted: ${entry.date}`,'━'.repeat(32)];
+  DAYS.forEach(day=>{
+    const mids=Array.isArray(entry.menu[day])?entry.menu[day]:(entry.menu[day]?[entry.menu[day]]:[]);
+    const meals=mids.map(id=>state.meals.find(m=>m.id===id)).filter(Boolean);
+    lines.push('');
+    lines.push(`📅 ${day}`);
+    if(meals.length) meals.forEach(m=>lines.push(`   🥘 ${m.name}`));
+    else lines.push('   —');
+  });
+  lines.push('');lines.push('Made with Mise en Place 🍴');
+  const text=lines.join('\n');
+  // Show share modal with this text
+  document.getElementById('share-preview').textContent=text;
+  const nativeBtn=document.getElementById('share-native-btn');
+  if(nativeBtn)nativeBtn.style.display=navigator.share?'flex':'none';
+  document.getElementById('share-modal').classList.add('open');
 }
 
 // ── TOAST & KEYBOARD
