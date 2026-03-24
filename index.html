@@ -811,10 +811,9 @@ header nav { display:none; }
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <div style="flex:1;"><label style="margin:0;font-size:12px;">How many meals?</label></div>
           <select id="ai-count" style="width:80px;">
+            <option value="1">1</option>
+            <option value="3" selected>3</option>
             <option value="5">5</option>
-            <option value="8" selected>8</option>
-            <option value="10">10</option>
-            <option value="15">15</option>
           </select>
           <div style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;">
             <button id="recipe-mode-short" onclick="setRecipeMode('short')"
@@ -889,6 +888,12 @@ header nav { display:none; }
   </button>
   <button onclick="exportShoppingList();closeMoreDrawer();" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:transparent;border:none;cursor:pointer;font-family:inherit;color:var(--text);font-size:14px;font-weight:500;transition:background .15s;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
     <span style="font-size:20px;">🛒</span><div><div style="font-weight:600;">Shopping List</div><div style="font-size:11px;color:var(--text-faint);">Generate from this week's meals</div></div>
+  </button>
+  <button onclick="openShareWeek();closeMoreDrawer();" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:transparent;border:none;cursor:pointer;font-family:inherit;color:var(--text);font-size:14px;font-weight:500;transition:background .15s;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+    <span style="font-size:20px;">📤</span><div><div style="font-weight:600;">Share This Week</div><div style="font-size:11px;color:var(--text-faint);">Copy or share your meal plan as text</div></div>
+  </button>
+  <button onclick="exportCalendar();closeMoreDrawer();" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:transparent;border:none;cursor:pointer;font-family:inherit;color:var(--text);font-size:14px;font-weight:500;transition:background .15s;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+    <span style="font-size:20px;">📅</span><div><div style="font-weight:600;">Add to Calendar</div><div style="font-size:11px;color:var(--text-faint);">Export to Google, Apple or Outlook calendar</div></div>
   </button>
   <button onclick="exportData();closeMoreDrawer();" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:transparent;border:none;cursor:pointer;font-family:inherit;color:var(--text);font-size:14px;font-weight:500;transition:background .15s;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
     <span style="font-size:20px;">⬆️</span><div><div style="font-weight:600;">Export Data</div><div style="font-size:11px;color:var(--text-faint);">Backup all meals and history</div></div>
@@ -1029,6 +1034,30 @@ header nav { display:none; }
       <button class="btn btn-outline btn-sm" onclick="closeShoppingModal()">Close</button>
       <button class="btn btn-outline btn-sm" onclick="copyShoppingList(false)">📋 Copy unchecked</button>
       <button class="btn btn-primary btn-sm" onclick="copyShoppingList(true)">📋 Copy all</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE WEEK MODAL -->
+<div class="modal-overlay" id="share-modal">
+  <div class="modal" style="width:500px;">
+    <div class="modal-title">📤 Share This Week</div>
+    <div id="share-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;font-size:13px;line-height:1.7;color:var(--text-soft);white-space:pre-wrap;max-height:320px;overflow-y:auto;font-family:monospace;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="copyShareText()" style="flex:1;">📋 Copy Text</button>
+      <button class="btn btn-outline" onclick="shareViaWebShare()" id="share-native-btn" style="flex:1;display:none;">📤 Share…</button>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Also share via</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="shareViaWhatsApp()">💬 WhatsApp</button>
+        <button class="btn btn-outline btn-sm" onclick="shareViaTelegram()">✈️ Telegram</button>
+        <button class="btn btn-outline btn-sm" onclick="shareViaEmail()">✉️ Email</button>
+        <button class="btn btn-outline btn-sm" onclick="shareViaTwitter()">𝕏 Twitter/X</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('share-modal').classList.remove('open')">Close</button>
     </div>
   </div>
 </div>
@@ -1274,10 +1303,10 @@ function renderPlanner(){
       ?mealIds.map((mid,mi)=>{
           const m=state.meals.find(x=>x.id===mid);if(!m)return'';
           const multi=(state.dayAssignmentMulti||{})[day];
-          // Show category tag on each meal only when the day has multi-categories
-          // This replaces the header tags — each meal owns its tag
+          const isFree=(state.planMode||'guided')==='free';
+          // Show category tag per meal only in Guided multi-category days
           let mealTag='';
-          if(multi&&multi.length>1){
+          if(!isFree&&multi&&multi.length>1){
             const mc=multi.find(cid=>m.categories.includes(cid));
             const cat=mc?state.categories.find(c=>c.id===mc):null;
             if(cat) mealTag=`<span class="tag ${cat.color}" style="font-size:9px;padding:1px 6px;margin-bottom:3px;display:inline-block;">${cat.name}</span><br>`;
@@ -1817,7 +1846,159 @@ function copyShoppingList(all){
 function closeShoppingModal(){document.getElementById('shopping-modal').classList.remove('open');shopItems=[];}
 
 
-// ── BULK EDIT ─────────────────────────────────────────────────
+// ── SHARE WEEK ────────────────────────────────────────────────
+function buildShareText(){
+  const wl = weekLabel(state.currentWeekNum, state.currentYear);
+  const mon = mondayOfWeek(state.currentWeekNum, state.currentYear);
+  const diet = state.activeDiet &&
+    state.activeDiet.appliedWeek === state.currentWeekNum &&
+    state.activeDiet.appliedYear === state.currentYear
+    ? `\n🎯 Diet Plan: ${state.activeDiet.goal}` : '';
+
+  let lines = [];
+  lines.push(`🍽️ My Meal Plan — Week of ${wl}${diet}`);
+  lines.push('━'.repeat(36));
+
+  DAYS.forEach((day, di) => {
+    const dd = new Date(mon); dd.setDate(mon.getDate() + di);
+    const dateStr = dd.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+    const mealIds = Array.isArray(state.currentMenu[day]) ? state.currentMenu[day] : [];
+    const meals = mealIds.map(id => state.meals.find(m => m.id === id)).filter(Boolean);
+    const cats = getCatsForDay(day);
+    const catStr = cats.length ? cats.map(c => c.name).join(' + ') : '';
+
+    lines.push('');
+    lines.push(`📅 ${day}  ${dateStr}${catStr ? '  [' + catStr + ']' : ''}`);
+    if(meals.length){
+      meals.forEach(m => lines.push(`   🥘 ${m.name}`));
+    } else {
+      lines.push('   —');
+    }
+  });
+
+  lines.push('');
+  lines.push('━'.repeat(36));
+
+  // Append shopping list summary
+  const ings = [];
+  DAYS.forEach(day => {
+    (Array.isArray(state.currentMenu[day]) ? state.currentMenu[day] : []).forEach(mid => {
+      const meal = state.meals.find(m => m.id === mid);
+      if(meal?.ingredients?.length) ings.push(...meal.ingredients);
+    });
+  });
+  const unique = [...new Set(ings.map(i => i.toLowerCase()))].sort();
+  if(unique.length){
+    lines.push(`🛒 Shopping List (${unique.length} items)`);
+    unique.forEach(i => lines.push(`  • ${i}`));
+    lines.push('');
+  }
+
+  lines.push('Made with Mise en Place 🍴');
+  return lines.join('\n');
+}
+
+function openShareWeek(){
+  const text = buildShareText();
+  document.getElementById('share-preview').textContent = text;
+  // Show native share button if available
+  const nativeBtn = document.getElementById('share-native-btn');
+  if(nativeBtn) nativeBtn.style.display = navigator.share ? 'flex' : 'none';
+  document.getElementById('share-modal').classList.add('open');
+}
+function copyShareText(){
+  const text = document.getElementById('share-preview').textContent;
+  navigator.clipboard.writeText(text).then(() => toast('📋 Copied to clipboard!'));
+}
+function shareViaWebShare(){
+  const text = buildShareText();
+  if(navigator.share) navigator.share({title:'My Meal Plan', text});
+}
+function shareViaWhatsApp(){
+  const text = encodeURIComponent(buildShareText());
+  window.open('https://wa.me/?text=' + text, '_blank');
+}
+function shareViaTelegram(){
+  const text = encodeURIComponent(buildShareText());
+  window.open('https://t.me/share/url?url=&text=' + text, '_blank');
+}
+function shareViaEmail(){
+  const wl = weekLabel(state.currentWeekNum, state.currentYear);
+  const subj = encodeURIComponent('My Meal Plan — Week of ' + wl);
+  const body = encodeURIComponent(buildShareText());
+  window.open('mailto:?subject=' + subj + '&body=' + body);
+}
+function shareViaTwitter(){
+  // Twitter has 280 char limit so just share a short version
+  const wl = weekLabel(state.currentWeekNum, state.currentYear);
+  const mealCount = DAYS.reduce((n,d) => n + (Array.isArray(state.currentMenu[d]) ? state.currentMenu[d].length : 0), 0);
+  const text = encodeURIComponent(`🍽️ My meal plan for week of ${wl} — ${mealCount} meals planned! Made with Mise en Place 🍴`);
+  window.open('https://twitter.com/intent/tweet?text=' + text, '_blank');
+}
+
+// ── CALENDAR EXPORT (ICS) ─────────────────────────────────────
+function exportCalendar(){
+  const mon = mondayOfWeek(state.currentWeekNum, state.currentYear);
+  const wl = weekLabel(state.currentWeekNum, state.currentYear);
+  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Mise en Place//Meal Planner//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+
+  DAYS.forEach((day, di) => {
+    const dd = new Date(mon); dd.setDate(mon.getDate() + di);
+    const mealIds = Array.isArray(state.currentMenu[day]) ? state.currentMenu[day] : [];
+    const meals = mealIds.map(id => state.meals.find(m => m.id === id)).filter(Boolean);
+    if(!meals.length) return;
+
+    const dateStr = dd.toISOString().slice(0,10).replace(/-/g,'');
+    const mealNames = meals.map(m => m.name).join(', ');
+    const cats = getCatsForDay(day);
+    const catStr = cats.length ? ' [' + cats.map(c => c.name).join('+') + ']' : '';
+    const ings = [...new Set(meals.flatMap(m => m.ingredients || []))];
+    const desc = `Meals: ${mealNames}${catStr}${ings.length ? '\\nIngredients: ' + ings.join(', ') : ''}`;
+    const uid = `mep-${state.currentWeekNum}-${state.currentYear}-${di}@miseenplace`;
+    const stamp = new Date().toISOString().replace(/[-:]/g,'').slice(0,15) + 'Z';
+
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${uid}`);
+    lines.push(`DTSTAMP:${stamp}`);
+    lines.push(`DTSTART;VALUE=DATE:${dateStr}`);
+    lines.push(`DTEND;VALUE=DATE:${dateStr}`);
+    lines.push(`SUMMARY:🍽️ ${mealNames}`);
+    lines.push(`DESCRIPTION:${desc}`);
+    lines.push(`CATEGORIES:Meal Plan`);
+    lines.push('END:VEVENT');
+  });
+
+  // Add a weekly shopping list event on Monday
+  const shopMon = new Date(mon);
+  const monStr = shopMon.toISOString().slice(0,10).replace(/-/g,'');
+  const ings = [];
+  DAYS.forEach(d => (Array.isArray(state.currentMenu[d])?state.currentMenu[d]:[]).forEach(mid=>{
+    const m=state.meals.find(x=>x.id===mid);if(m?.ingredients?.length)ings.push(...m.ingredients);
+  }));
+  const unique=[...new Set(ings.map(i=>i.toLowerCase()))].sort();
+  if(unique.length){
+    const stamp2 = new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:mep-shop-${state.currentWeekNum}-${state.currentYear}@miseenplace`);
+    lines.push(`DTSTAMP:${stamp2}`);
+    lines.push(`DTSTART;VALUE=DATE:${monStr}`);
+    lines.push(`DTEND;VALUE=DATE:${monStr}`);
+    lines.push(`SUMMARY:🛒 Shopping List — Week of ${wl}`);
+    lines.push(`DESCRIPTION:${unique.map(i=>'• '+i).join('\\n')}`);
+    lines.push('CATEGORIES:Shopping');
+    lines.push('END:VEVENT');
+  }
+
+  lines.push('END:VCALENDAR');
+  const blob = new Blob([lines.join('\r\n')], {type:'text/calendar;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `meal-plan-week-${state.currentWeekNum}-${state.currentYear}.ics`;
+  a.click();
+  toast('📅 Calendar file downloaded! Open it to add to Google/Apple/Outlook.');
+}
+
+
 let bulkMode = false;
 let bulkSelected = new Set();
 
@@ -2594,14 +2775,15 @@ async function runAISuggestions(){
     ? `- "recipe": concise cooking method in exactly 3–5 steps as a single string, steps separated by " | ". Max 15 words per step. No quantities needed.`
     : `- "recipe": detailed full recipe as a single string, steps separated by " | ". Include: exact ingredient quantities in each step, cooking temperatures, times, and any useful tips. Write 6–10 thorough steps. Each step can be up to 40 words.`;
 
-  const sysPrompt = `You are a culinary expert. Return ONLY a valid JSON array with no markdown and no explanation at all — just the raw JSON array.
+  const sysPrompt = `You are a culinary expert. The user will describe a specific type of meal or cuisine. You must suggest ONLY meals that closely match that description — do not invent unrelated meals.
+Return ONLY a valid JSON array with no markdown and no explanation — just the raw JSON array.
 Each element must have exactly these fields:
-- "name": meal name string
+- "name": meal name string (must match the user's described style/cuisine)
 - "category": one-word category string
 - "ingredients": array of ingredient name strings with quantities (e.g. "200g chicken breast", "2 cloves garlic")
 - "notes": one sentence description of the dish
 ${recipeInstruction}
-Return exactly ${count} meals.`;
+Return exactly ${count} different meals, ALL matching the user's description. Never include generic or unrelated meals.`;
 
   const maxTokens = recipeMode === 'short' ? 2000 : 6000;
 
