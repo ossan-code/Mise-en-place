@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Mise en Place v5 - Built: Wednesday 25 March 2026 12:00 UTC -->
+<!-- Mise en Place v5 - Built: Wednesday 25 March 2026 18:00 UTC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -648,7 +648,7 @@ header nav { display:none; }
         <button class="quick-chip primary" id="accept-btn" onclick="acceptMenu()">✓ Accept</button>
         <button class="quick-chip" onclick="togglePlannerMenu(event)" id="planner-menu-btn" title="More options">⋯ More</button>
         <!-- Planner dropdown menu -->
-        <div id="planner-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;background:var(--surface);border:1px solid var(--border-bright);border-radius:14px;padding:6px;min-width:220px;box-shadow:var(--shadow-lg);">
+        <div id="planner-dropdown" style="display:none;position:fixed;z-index:500;background:var(--surface);border:1px solid var(--border-bright);border-radius:14px;padding:6px;min-width:240px;box-shadow:0 16px 48px rgba(0,0,0,0.6);">
           <button onclick="openAIDietPlanner();closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);border-radius:8px;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
             <span>🎯</span><div><div style="font-weight:600;">Smart Diet Plan</div><div style="font-size:11px;color:var(--text-faint);">AI personalised weekly plan</div></div>
           </button>
@@ -862,7 +862,7 @@ header nav { display:none; }
   </div>
 
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v5 · Built Wednesday 25 March 2026 12:00 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Wednesday 25 March 2026 18:00 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
@@ -1229,56 +1229,43 @@ function getCatsForDay(day){
 }
 // getMealsForDay — defined in plan mode section above
 // Pick meals for a day — one per category if multi-cat, one otherwise
-// forceRegen=true relaxes the rotation rule so meals always change
+// forceRegen=true: relaxes rotation AND allows re-picking meals from current day
 function pickMealsForDay(day, used, forceRegen){
   const multi=(state.dayAssignmentMulti||{})[day];
   const min=forceRegen?-999:(state.currentWeekNum-state.rotationWeeks);
   const mode=state.planMode||'guided';
   const picks=[];
 
-  if(mode!=='free' && multi && multi.length>1){
-    // Multi-category: pick one meal per category
-    multi.forEach(catId=>{
-      // Primary: matches this cat + rotation
-      let pool=state.meals.filter(m=>
-        m.categories.includes(catId) &&
-        (m.lastUsedWeek||0)<=min &&
-        !used.has(m.id) &&
-        !picks.includes(m.id)
-      );
-      // Fallback: matches cat, always relax rotation
-      if(!pool.length) pool=state.meals.filter(m=>
-        m.categories.includes(catId) &&
-        !used.has(m.id) &&
-        !picks.includes(m.id)
-      );
-      // Fallback: any unused meal
-      if(!pool.length) pool=state.meals.filter(m=>!used.has(m.id)&&!picks.includes(m.id));
-      if(pool.length){
-        const pick=pool[Math.floor(Math.random()*pool.length)];
-        picks.push(pick.id);
-        used.add(pick.id);
-      }
-    });
-    return picks;
+  function pickOne(catId){
+    const hasCat=!!catId;
+    // 1. Cat + rotation + not used + not yet picked this day
+    let pool=state.meals.filter(m=>
+      (!hasCat||m.categories.includes(catId))&&
+      (m.lastUsedWeek||0)<=min&&!used.has(m.id)&&!picks.includes(m.id));
+    // 2. Relax rotation, keep cat
+    if(!pool.length) pool=state.meals.filter(m=>
+      (!hasCat||m.categories.includes(catId))&&!used.has(m.id)&&!picks.includes(m.id));
+    // 3. Allow meals used on other days (critical for forceRegen)
+    if(!pool.length) pool=state.meals.filter(m=>
+      (!hasCat||m.categories.includes(catId))&&!picks.includes(m.id));
+    // 4. Any meal not yet picked for this day
+    if(!pool.length) pool=state.meals.filter(m=>!picks.includes(m.id));
+    // 5. Absolute fallback
+    if(!pool.length) pool=[...state.meals];
+    if(pool.length){
+      const pick=pool[Math.floor(Math.random()*pool.length)];
+      picks.push(pick.id);
+      used.add(pick.id);
+    }
   }
 
-  // Single category (or free mode)
-  let pool=getMealsForDay(day).filter(m=>!used.has(m.id));
-  // For forceRegen, also include meals beyond rotation limit
-  if(!pool.length||forceRegen){
-    const catId=state.dayAssignments[day];
-    const catPool=state.meals.filter(m=>(!catId||m.categories.includes(catId))&&!used.has(m.id));
-    if(forceRegen) pool=catPool; // use full cat pool when forced
-    else if(!pool.length) pool=catPool;
+  if(mode!=='free'&&multi&&multi.length>1){
+    multi.forEach(catId=>pickOne(catId));
+    return picks;
   }
-  if(!pool.length) pool=state.meals.filter(m=>!used.has(m.id));
-  if(pool.length){
-    const pick=pool[Math.floor(Math.random()*pool.length)];
-    used.add(pick.id);
-    return [pick.id];
-  }
-  return [];
+  const catId=(mode!=='free')?state.dayAssignments[day]:'';
+  pickOne(catId);
+  return picks;
 }
 
 function generateMenu(){
@@ -1988,8 +1975,10 @@ function exportCalendar(){
     lines.push(`UID:${uid}`);
     lines.push(`DTSTAMP:${stamp}`);
     lines.push(`DTSTART;VALUE=DATE:${dateStr}`);
-    lines.push(`DTEND;VALUE=DATE:${dateStr}`);
-    lines.push(`SUMMARY:🍽️ ${mealNames}`);
+    const ddNext=new Date(dd);ddNext.setDate(dd.getDate()+1);
+    const nxtStr=`${ddNext.getFullYear()}${pad(ddNext.getMonth()+1)}${pad(ddNext.getDate())}`;
+    lines.push(`DTEND;VALUE=DATE:${nxtStr}`);
+    lines.push(`SUMMARY:Meal Plan - ${mealNames}`);
     lines.push(`DESCRIPTION:${desc}`);
     lines.push(`CATEGORIES:Meal Plan`);
     lines.push('END:VEVENT');
@@ -2010,8 +1999,10 @@ function exportCalendar(){
     lines.push(`UID:mep-shop-${state.currentWeekNum}-${state.currentYear}@miseenplace`);
     lines.push(`DTSTAMP:${stamp2}`);
     lines.push(`DTSTART;VALUE=DATE:${monStr}`);
-    lines.push(`DTEND;VALUE=DATE:${monStr}`);
-    lines.push(`SUMMARY:🛒 Shopping List — Week of ${wl}`);
+    const shopMonNext=new Date(shopMon);shopMonNext.setDate(shopMon.getDate()+1);
+    const monStrNext=`${shopMonNext.getFullYear()}${pad2(shopMonNext.getMonth()+1)}${pad2(shopMonNext.getDate())}`;
+    lines.push(`DTEND;VALUE=DATE:${monStrNext}`);
+    lines.push(`SUMMARY:Shopping List - Week of ${wl}`);
     lines.push(`DESCRIPTION:${unique.map(i=>'• '+i).join('\\n')}`);
     lines.push('CATEGORIES:Shopping');
     lines.push('END:VEVENT');
@@ -2494,7 +2485,20 @@ function saveInlineCategory(){
 function togglePlannerMenu(e){
   e.stopPropagation();
   const d=document.getElementById('planner-dropdown');
-  d.style.display=d.style.display==='none'?'block':'none';
+  if(d.style.display==='none'){
+    const btn=document.getElementById('planner-menu-btn');
+    const r=btn.getBoundingClientRect();
+    d.style.top=(r.bottom+6)+'px';
+    d.style.left=r.left+'px';
+    d.style.display='block';
+    requestAnimationFrame(()=>{
+      const dr=d.getBoundingClientRect();
+      if(dr.right>window.innerWidth-8) d.style.left=Math.max(8,window.innerWidth-dr.width-8)+'px';
+      if(dr.bottom>window.innerHeight-8) d.style.top=(r.top-dr.height-6)+'px';
+    });
+  } else {
+    d.style.display='none';
+  }
 }
 function closePlannerMenu(){
   const d=document.getElementById('planner-dropdown');
