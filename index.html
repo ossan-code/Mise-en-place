@@ -10,7 +10,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mise en Place">
-<meta name="description" content="Weekly meal planner — plan meals, manage a pool, track history, shopping lists.">
+<meta name="description" content="Your personal weekly smart meal planner. Plan meals, discover with AI, track history and get health insights.">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -3052,24 +3056,9 @@ document.head.appendChild(manifestLink);
 
 // Register inline service worker via blob URL
 if ('serviceWorker' in navigator) {
-  try {
-    const swCode = `
-const CACHE = 'mep-v1';
-const URLS = ['./', './index.html'];
-self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)).then(() => self.skipWaiting())));
-self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch', e => {
-  e.respondWith(caches.match(e.request).then(cached => {
-    const fresh = fetch(e.request).then(r => { if(r&&r.status===200){const cl=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));}return r; }).catch(()=>cached);
-    return cached || fresh;
-  }));
-});`;
-    const blob = new Blob([swCode], {type: 'application/javascript'});
-    const swURL = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swURL, {scope: './'})
-      .then(() => console.log('SW ready'))
-      .catch(() => {}); // silently ignore — app works fine without SW
-  } catch(e) {} // silently ignore blob URL errors on local file://
+  navigator.serviceWorker.register('/sw.js', {scope: '/'})
+    .then(() => console.log('SW registered'))
+    .catch(() => {}); // works fine without SW
 }
 
 // ── INIT ──────────────────────────────────────────────────────
