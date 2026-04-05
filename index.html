@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Mise en Place v5 - Built: Wednesday 25 March 2026 18:00 UTC -->
+<!-- Mise en Place v5 - Built: Sunday 5 April 2026 12:00 UTC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -407,6 +407,19 @@ label{display:block;font-size:11px;font-weight:600;color:var(--text-faint);margi
 .cat-orange{background:rgba(251,146,60,0.1);color:#FDBA74;border:1px solid rgba(251,146,60,0.22);}
 
 hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
+/* ── Diet Chat ── */
+#panel-chat{display:none;flex-direction:column;height:calc(100vh - 130px);}
+#panel-chat.active{display:flex;}
+.chat-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 0 12px;}
+.chat-bubble{max-width:85%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.6;}
+.chat-bubble.user{align-self:flex-end;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-bottom-right-radius:4px;}
+.chat-bubble.bot{align-self:flex-start;background:var(--surface2);border:1px solid var(--border);color:var(--text-soft);border-bottom-left-radius:4px;}
+.chat-bubble.bot.typing{color:var(--text-faint);font-style:italic;}
+.chat-input-row{display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);}
+.chat-input-row textarea{flex:1;border-radius:12px;resize:none;padding:10px 14px;font-size:13px;min-height:44px;max-height:100px;}
+.chat-suggestion{display:inline-flex;padding:6px 12px;border-radius:20px;border:1px solid var(--border-bright);background:var(--surface2);cursor:pointer;font-size:11px;font-weight:600;color:var(--text-soft);transition:all .15s;white-space:nowrap;}
+.chat-suggestion:hover{border-color:var(--accent);color:var(--accent2);background:var(--accent-glow);}
+
 /* ── Android-style Bottom Navigation ── */
 .bottom-nav{
   position:fixed;bottom:0;left:0;right:0;
@@ -669,14 +682,24 @@ header nav { display:none; }
             <span>📅</span><div><div style="font-weight:600;">Add to Calendar</div><div style="font-size:11px;color:var(--text-faint);">Export .ics file</div></div>
           </button>
           <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">
-          <div style="padding:8px 12px 4px;font-size:11px;color:var(--text-faint);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Planning Mode</div>
+          <div style="padding:8px 12px 4px;font-size:11px;color:var(--text-faint);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Meal Source</div>
+          <div style="margin:4px 8px;display:flex;flex-direction:column;gap:3px;">
+            <button id="source-pool" onclick="setPlanSource('pool');closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--accent);background:var(--accent-glow);cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;color:var(--accent2);text-align:left;">
+              <span>🗂</span><div><div>Meal Pool</div><div style="font-size:10px;font-weight:400;color:var(--text-faint);">Pick from your saved meals</div></div>
+            </button>
+            <button id="source-ai" onclick="setPlanSource('ai');closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;color:var(--text-soft);text-align:left;">
+              <span>🤖</span><div><div>AI Generate</div><div style="font-size:10px;font-weight:400;color:var(--text-faint);">AI suggests new meals from web</div></div>
+            </button>
+          </div>
+          <div style="padding:4px 12px 4px;font-size:11px;color:var(--text-faint);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Category Filter</div>
           <div style="display:flex;gap:0;margin:4px 8px 6px;background:var(--surface3);border-radius:20px;padding:2px;">
-            <button id="mode-guided" onclick="setPlanMode('guided')" style="flex:1;padding:6px 12px;border-radius:18px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;background:var(--accent);color:#fff;transition:all .15s;">🗂 Guided</button>
-            <button id="mode-free" onclick="setPlanMode('free')" style="flex:1;padding:6px 12px;border-radius:18px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;background:transparent;color:var(--text-faint);transition:all .15s;">🎲 Free</button>
+            <button id="mode-guided" onclick="setPlanMode('guided')" style="flex:1;padding:6px 12px;border-radius:18px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;background:var(--accent);color:#fff;transition:all .15s;">🗂 Guided</button>
+            <button id="mode-free" onclick="setPlanMode('free')" style="flex:1;padding:6px 12px;border-radius:18px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;background:transparent;color:var(--text-faint);transition:all .15s;">🎲 Free</button>
           </div>
         </div>
       </div>
     </div>
+    <div id="ai-generate-status" style="display:none;background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(34,211,238,0.08));border:1px solid rgba(108,99,255,0.3);border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:var(--accent2);"></div>
     <div class="week-grid" id="week-grid"></div>
     <div id="planner-empty" class="empty-state" style="display:none;">
       <div class="icon">🥕</div>
@@ -865,8 +888,39 @@ header nav { display:none; }
     </div>
   </div>
 
+
+  <!-- DIET CHAT -->
+  <div id="panel-chat" class="panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div>
+        <div class="section-title">🤖 Diet Assistant</div>
+        <div class="section-sub">Ask anything about meals, nutrition, calories or your plan</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="clearChat()" title="Clear chat">🗑</button>
+    </div>
+    <!-- Quick suggestions -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="chat-suggestions">
+      <button class="chat-suggestion" onclick="sendSuggestion(this.textContent)">How many calories in my current week?</button>
+      <button class="chat-suggestion" onclick="sendSuggestion(this.textContent)">What meals have the most protein?</button>
+      <button class="chat-suggestion" onclick="sendSuggestion(this.textContent)">Suggest a heart-friendly meal</button>
+      <button class="chat-suggestion" onclick="sendSuggestion(this.textContent)">Is my diet balanced this week?</button>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-bubble bot">
+        👋 Hi! I'm your Diet Assistant. I can see your meal pool, current week's plan, and history.<br><br>
+        Ask me about calories, nutrition, meal suggestions, or anything diet related!
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <textarea id="chat-input" placeholder="Ask about calories, nutrition, meals…" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+      <button class="btn btn-primary" onclick="sendChat()" id="chat-send-btn" style="padding:10px 16px;">➤</button>
+    </div>
+  </div>
+
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v5 · Built Wednesday 25 March 2026 18:00 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Sunday 5 April 2026 12:00 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
@@ -887,6 +941,10 @@ header nav { display:none; }
   <button onclick="showPanel('discover')" id="nav-discover">
     <span class="nav-icon">🔍</span>
     <span class="nav-label">Discover</span>
+  </button>
+  <button onclick="showPanel('chat')" id="nav-chat">
+    <span class="nav-icon">💬</span>
+    <span class="nav-label">Chat</span>
   </button>
   <button onclick="showPanel('more')" id="nav-more">
     <span class="nav-icon">⋯</span>
@@ -1173,7 +1231,7 @@ function showPanel(name){
   const panel = document.getElementById('panel-'+name);
   if(panel) panel.classList.add('active');
   // Sync bottom nav
-  ['home','planner','meals','discover','more'].forEach(n=>{
+  ['home','planner','meals','discover','chat','more'].forEach(n=>{
     const btn=document.getElementById('nav-'+n);
     if(btn) btn.classList.toggle('active', n===name);
   });
@@ -1184,6 +1242,7 @@ function showPanel(name){
   if(name==='stats')renderStats();
   if(name==='settings')renderSettings();
   if(name==='discover')initDiscover();
+  if(name==='chat')initChat();
 }
 function openMoreDrawer(){
   const overlay=document.getElementById('more-drawer-overlay');
@@ -1192,7 +1251,7 @@ function openMoreDrawer(){
   drawer.style.display='block';
   requestAnimationFrame(()=>{ drawer.style.transform='translateY(0)'; });
   // Mark more button active
-  ['home','planner','meals','discover','more'].forEach(n=>{
+  ['home','planner','meals','discover','chat','more'].forEach(n=>{
     const btn=document.getElementById('nav-'+n);
     if(btn) btn.classList.toggle('active',n==='more');
   });
@@ -1208,7 +1267,7 @@ function closeMoreDrawer(){
     const active=document.querySelector('.panel.active');
     if(active){
       const id=active.id.replace('panel-','');
-      ['home','planner','meals','discover','more'].forEach(n=>{
+      ['home','planner','meals','discover','chat','more'].forEach(n=>{
         const btn=document.getElementById('nav-'+n);
         if(btn) btn.classList.toggle('active',n===id);
       });
@@ -1273,6 +1332,7 @@ function pickMealsForDay(day, used, forceRegen){
 }
 
 function generateMenu(){
+  if(planSource==='ai'){runAIGenerate();return;}
   const menu={};const used=new Set();
   DAYS.forEach(day=>{
     menu[day]=pickMealsForDay(day,used);
@@ -2545,6 +2605,234 @@ function shareHistEntry(entryId){
   const nativeBtn=document.getElementById('share-native-btn');
   if(nativeBtn)nativeBtn.style.display=navigator.share?'flex':'none';
   document.getElementById('share-modal').classList.add('open');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// DIET CHAT
+// ══════════════════════════════════════════════════════════════
+let chatHistory = [];
+let chatReady = false;
+
+function initChat(){
+  chatReady = true;
+  // Scroll to bottom
+  const msgs = document.getElementById('chat-messages');
+  if(msgs) msgs.scrollTop = msgs.scrollHeight;
+}
+
+function buildChatContext(){
+  const cats = state.categories.map(c=>c.name).join(', ');
+  const poolNames = state.meals.map(m=>m.name).join(', ');
+  const weekMeals = DAYS.map(d=>{
+    const ids = Array.isArray(state.currentMenu[d])?state.currentMenu[d]:[];
+    const names = ids.map(id=>state.meals.find(m=>m.id===id)?.name).filter(Boolean);
+    return names.length ? `${d}: ${names.join(', ')}` : null;
+  }).filter(Boolean).join(' | ');
+  const hist = state.menuHistory.length;
+  const diet = state.activeDiet ? `Active diet plan: ${state.activeDiet.goal}.` : '';
+  return `You are a friendly diet assistant embedded in "Mise en Place", a weekly meal planner app.
+
+User's meal pool (${state.meals.length} meals): ${poolNames || 'empty'}.
+Food categories: ${cats || 'none set'}.
+This week's menu: ${weekMeals || 'not set yet'}.
+History: ${hist} accepted weekly menus.
+${diet}
+
+Answer questions about nutrition, calories (give rough estimates), meal suggestions, diet advice, and help with the app's meal planning. Be concise and friendly. When estimating calories, make clear they are rough estimates. If asked about a specific meal in the pool, give nutritional info about it. Always respond in the same language the user writes in.`;
+}
+
+function addChatBubble(text, role, isTyping){
+  const msgs = document.getElementById('chat-messages');
+  if(!msgs) return null;
+  const div = document.createElement('div');
+  div.className = `chat-bubble ${role}${isTyping?' typing':''}`;
+  div.innerHTML = text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+async function sendChat(){
+  const inp = document.getElementById('chat-input');
+  const btn = document.getElementById('chat-send-btn');
+  const text = (inp?.value||'').trim();
+  if(!text) return;
+
+  let key='';
+  try{key=localStorage.getItem('groq_key')||'';}catch(e){}
+  if(!key||!key.startsWith('gsk_')){
+    addChatBubble('⚠️ Please enter your Groq API key in Discover → AI Suggestions first.','bot');
+    return;
+  }
+
+  inp.value='';inp.style.height='auto';
+  btn.disabled=true;
+  addChatBubble(text,'user');
+
+  // Add to history
+  chatHistory.push({role:'user',content:text});
+
+  // Typing indicator
+  const typingEl = addChatBubble('Thinking…','bot',true);
+
+  try{
+    const messages = [
+      {role:'system', content:buildChatContext()},
+      ...chatHistory.slice(-10) // keep last 10 turns for context
+    ];
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:600,
+        temperature:0.6,
+        messages
+      })
+    });
+    const data = await resp.json();
+    if(data.error) throw new Error(data.error.message);
+    const reply = data.choices?.[0]?.message?.content||'Sorry, I could not get a response.';
+    chatHistory.push({role:'assistant',content:reply});
+    if(typingEl){typingEl.classList.remove('typing');typingEl.innerHTML=reply.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');}
+  }catch(e){
+    if(typingEl){typingEl.classList.remove('typing');typingEl.innerHTML='⚠️ Error: '+e.message;}
+  }finally{
+    btn.disabled=false;
+    inp.focus();
+    const msgs=document.getElementById('chat-messages');
+    if(msgs)msgs.scrollTop=msgs.scrollHeight;
+  }
+}
+
+function sendSuggestion(text){
+  const inp=document.getElementById('chat-input');
+  if(inp){inp.value=text;sendChat();}
+}
+
+function clearChat(){
+  chatHistory=[];
+  const msgs=document.getElementById('chat-messages');
+  if(msgs) msgs.innerHTML=`<div class="chat-bubble bot">
+    👋 Chat cleared! I still have your meal pool and weekly plan in context.<br>What would you like to know?
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// AI GENERATE PLANNER MODE
+// ══════════════════════════════════════════════════════════════
+let planSource = 'pool'; // 'pool' | 'ai'
+
+function setPlanSource(src){
+  planSource = src;
+  // Update visual state
+  const poolBtn = document.getElementById('source-pool');
+  const aiBtn = document.getElementById('source-ai');
+  if(poolBtn){
+    poolBtn.style.borderColor = src==='pool'?'var(--accent)':'var(--border)';
+    poolBtn.style.background = src==='pool'?'var(--accent-glow)':'transparent';
+    poolBtn.style.color = src==='pool'?'var(--accent2)':'var(--text-soft)';
+  }
+  if(aiBtn){
+    aiBtn.style.borderColor = src==='ai'?'var(--purple)':'var(--border)';
+    aiBtn.style.background = src==='ai'?'rgba(167,139,250,0.1)':'transparent';
+    aiBtn.style.color = src==='ai'?'var(--accent2)':'var(--text-soft)';
+  }
+  if(src==='ai') runAIGenerate();
+  else generateMenu();
+}
+
+async function runAIGenerate(){
+  let key='';
+  try{key=localStorage.getItem('groq_key')||'';}catch(e){}
+  if(!key||!key.startsWith('gsk_')){
+    toast('Please enter your Groq API key in Discover first.');
+    setPlanSource('pool');
+    return;
+  }
+
+  const statusEl = document.getElementById('ai-generate-status');
+  if(statusEl){statusEl.style.display='block';statusEl.textContent='🤖 AI is generating personalised meals for your week…';}
+
+  const mode = state.planMode||'guided';
+  const diet = (state.activeDiet&&state.activeDiet.appliedWeek===state.currentWeekNum)?state.activeDiet.goal:'';
+
+  // Build day requirements
+  const dayReqs = DAYS.map(day=>{
+    const cats = getCatsForDay(day);
+    const catStr = cats.length ? cats.map(c=>c.name).join(' or ') : (mode==='guided'?'any':'any');
+    return `${day}: ${catStr}`;
+  }).join(', ');
+
+  const prompt = `You are a culinary expert. Generate a 7-day meal plan as a JSON object.
+${diet?`Diet goal: ${diet}.`:''}
+${mode==='guided'?`Day category requirements: ${dayReqs}`:'No category restrictions — choose varied, balanced meals.'}
+Existing meal pool to AVOID repeating: ${state.meals.slice(0,20).map(m=>m.name).join(', ')||'none'}.
+
+Return ONLY valid JSON with this exact structure — no markdown:
+{
+  "Monday": {"name":"meal name","category":"one word","ingredients":["ing1","ing2"],"notes":"one sentence"},
+  "Tuesday": {"name":"...","category":"...","ingredients":[...],"notes":"..."},
+  "Wednesday": {"name":"...","category":"...","ingredients":[...],"notes":"..."},
+  "Thursday": {"name":"...","category":"...","ingredients":[...],"notes":"..."},
+  "Friday": {"name":"...","category":"...","ingredients":[...],"notes":"..."},
+  "Saturday": {"name":"...","category":"...","ingredients":[...],"notes":"..."},
+  "Sunday": {"name":"...","category":"...","ingredients":[...],"notes":"..."}
+}`;
+
+  try{
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:1500,temperature:0.7,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await resp.json();
+    if(data.error) throw new Error(data.error.message);
+    const text=(data.choices?.[0]?.message?.content||'').replace(/```json|```/g,'').trim();
+    const plan = JSON.parse(text);
+
+    // Add new meals to pool and build menu
+    const menu={};
+    DAYS.forEach(day=>{
+      const d=plan[day];
+      if(!d?.name) return;
+      // Find or create meal in pool
+      let meal=state.meals.find(m=>m.name.toLowerCase()===d.name.toLowerCase());
+      if(!meal){
+        // Auto-create category if needed
+        let cat=state.categories.find(c=>c.name.toLowerCase()===(d.category||'').toLowerCase());
+        if(!cat&&d.category){
+          cat={id:'cat_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+               name:d.category,color:CAT_COLORS[state.categories.length%CAT_COLORS.length]};
+          state.categories.push(cat);
+        }
+        meal={id:'meal_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+              name:d.name,categories:cat?[cat.id]:[],
+              ingredients:Array.isArray(d.ingredients)?d.ingredients:[],
+              notes:d.notes||'AI generated',lastUsedWeek:0};
+        state.meals.push(meal);
+      }
+      menu[day]=[meal.id];
+    });
+    // Fill any missing days from pool
+    DAYS.forEach(day=>{if(!menu[day]||!menu[day].length) menu[day]=pickMealsForDay(day,new Set(),false);});
+    state.currentMenu=menu;
+    save();
+    if(statusEl){statusEl.textContent='✅ AI generated '+Object.keys(plan).length+' new meals and added them to your pool!';}
+    setTimeout(()=>{if(statusEl)statusEl.style.display='none';},4000);
+    renderPlanner();
+    renderMealList();
+    toast('🤖 AI generated your week! Meals added to pool.');
+  }catch(e){
+    if(statusEl){statusEl.textContent='⚠️ AI error: '+e.message;setTimeout(()=>statusEl.style.display='none',4000);}
+    toast('AI generate failed: '+e.message);
+    setPlanSource('pool');
+  }
 }
 
 // ── TOAST & KEYBOARD
