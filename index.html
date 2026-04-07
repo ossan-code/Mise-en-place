@@ -11,10 +11,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mise en Place">
 <meta name="description" content="Your personal weekly smart meal planner. Plan meals, discover with AI, track history and get health insights.">
-<link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png">
+<link rel="manifest" href="/Mise-en-place/manifest.json">
+<link rel="apple-touch-icon" href="/Mise-en-place/icons/icon-192x192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/Mise-en-place/icons/icon-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/Mise-en-place/icons/icon-512x512.png">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -1974,41 +1974,42 @@ function buildShareText(){
   return lines.join('\n');
 }
 
-function openShareWeek(){
-  const text = buildShareText();
+// Holds the text currently shown in share modal — used by all share methods
+let _currentShareText = '';
+
+function openShareModal(text, title){
+  _currentShareText = text;
   document.getElementById('share-preview').textContent = text;
-  // Show native share button if available
   const nativeBtn = document.getElementById('share-native-btn');
   if(nativeBtn) nativeBtn.style.display = navigator.share ? 'flex' : 'none';
   document.getElementById('share-modal').classList.add('open');
 }
+
+function openShareWeek(){
+  openShareModal(buildShareText(), 'My Meal Plan');
+}
+
 function copyShareText(){
-  const text = document.getElementById('share-preview').textContent;
-  navigator.clipboard.writeText(text).then(() => toast('📋 Copied to clipboard!'));
+  navigator.clipboard.writeText(_currentShareText).then(() => toast('📋 Copied to clipboard!'));
 }
 function shareViaWebShare(){
-  const text = buildShareText();
-  if(navigator.share) navigator.share({title:'My Meal Plan', text});
+  if(navigator.share) navigator.share({title:'My Meal Plan', text:_currentShareText});
 }
 function shareViaWhatsApp(){
-  const text = encodeURIComponent(buildShareText());
-  window.open('https://wa.me/?text=' + text, '_blank');
+  window.open('https://wa.me/?text=' + encodeURIComponent(_currentShareText), '_blank');
 }
 function shareViaTelegram(){
-  const text = encodeURIComponent(buildShareText());
-  window.open('https://t.me/share/url?url=&text=' + text, '_blank');
+  window.open('https://t.me/share/url?url=&text=' + encodeURIComponent(_currentShareText), '_blank');
 }
 function shareViaEmail(){
-  const wl = weekLabel(state.currentWeekNum, state.currentYear);
-  const subj = encodeURIComponent('My Meal Plan — Week of ' + wl);
-  const body = encodeURIComponent(buildShareText());
-  window.open('mailto:?subject=' + subj + '&body=' + body);
+  const firstLine = _currentShareText.split('\n')[0];
+  const subj = encodeURIComponent(firstLine.replace(/[🍽️]/g,'').trim());
+  window.open('mailto:?subject=' + subj + '&body=' + encodeURIComponent(_currentShareText));
 }
 function shareViaTwitter(){
-  // Twitter has 280 char limit so just share a short version
   const wl = weekLabel(state.currentWeekNum, state.currentYear);
   const mealCount = DAYS.reduce((n,d) => n + (Array.isArray(state.currentMenu[d]) ? state.currentMenu[d].length : 0), 0);
-  const text = encodeURIComponent(`🍽️ My meal plan for week of ${wl} — ${mealCount} meals planned! Made with Mise en Place 🍴`);
+  const text = encodeURIComponent('My meal plan for week of ' + wl + ' — ' + mealCount + ' meals planned! Made with Mise en Place');
   window.open('https://twitter.com/intent/tweet?text=' + text, '_blank');
 }
 
@@ -2588,23 +2589,25 @@ function setMealsPerDay(n){
 function shareHistEntry(entryId){
   const entry=state.menuHistory.find(e=>e.id==entryId);
   if(!entry){toast('Entry not found.');return;}
-  const diet=entry.dietPlan?`\n🎯 Diet: ${entry.dietPlan.goal}`:'';
-  let lines=[`🍽️ Meal Plan — Week of ${entry.weekLabel}${diet}`,`Accepted: ${entry.date}`,'━'.repeat(32)];
+  const diet=entry.dietPlan?`\n🎯 Diet Plan: ${entry.dietPlan.goal}`:'';
+  const wl=entry.weekLabel||`Week ${entry.weekNum}, ${entry.year}`;
+  let lines=[`🍽️ Meal Plan — Week of ${wl}${diet}`,`Accepted: ${entry.date}`,'━'.repeat(32)];
   DAYS.forEach(day=>{
     const mids=Array.isArray(entry.menu[day])?entry.menu[day]:(entry.menu[day]?[entry.menu[day]]:[]);
-    const meals=mids.map(id=>state.meals.find(m=>m.id===id)).filter(Boolean);
+    // Look up meal names — handle case where meal was deleted from pool
+    const mealNames=mids.map(id=>{
+      const m=state.meals.find(m=>m.id===id);
+      return m?m.name:null;
+    }).filter(Boolean);
     lines.push('');
     lines.push(`📅 ${day}`);
-    if(meals.length) meals.forEach(m=>lines.push(`   🥘 ${m.name}`));
+    if(mealNames.length) mealNames.forEach(n=>lines.push(`   🥘 ${n}`));
     else lines.push('   —');
   });
-  lines.push('');lines.push('Made with Mise en Place 🍴');
-  const text=lines.join('\n');
-  // Show share modal with this text
-  document.getElementById('share-preview').textContent=text;
-  const nativeBtn=document.getElementById('share-native-btn');
-  if(nativeBtn)nativeBtn.style.display=navigator.share?'flex':'none';
-  document.getElementById('share-modal').classList.add('open');
+  lines.push('');
+  lines.push('Made with Mise en Place 🍴');
+  // Use openShareModal so all share buttons use this text
+  openShareModal(lines.join('\n'), 'Meal Plan — Week of '+wl);
 }
 
 
@@ -3344,7 +3347,7 @@ document.head.appendChild(manifestLink);
 
 // Register inline service worker via blob URL
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js', {scope: '/'})
+  navigator.serviceWorker.register('/Mise-en-place/sw.js', {scope: '/Mise-en-place/'})
     .then(() => console.log('SW registered'))
     .catch(() => {}); // works fine without SW
 }
