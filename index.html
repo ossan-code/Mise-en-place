@@ -1342,15 +1342,82 @@ function generateMenu(){
 
 // Regenerate just one specific day (respects multi-category)
 function regenerateDay(day){
+  if(planSource==='ai'){
+    // AI mode — generate a single day via AI
+    runAIDayGenerate(day);
+    return;
+  }
   const used=new Set();
   DAYS.forEach(d=>{
-    if(d===day)return; // don't block current day's meals from being re-picked
+    if(d===day)return;
     (Array.isArray(state.currentMenu[d])?state.currentMenu[d]:[]).forEach(id=>used.add(id));
   });
-  // Pass forceRegen=true so rotation rule is relaxed for manual regen
   state.currentMenu[day]=pickMealsForDay(day,used,true);
   save();renderPlanner();
   toast('🎲 '+day+' refreshed!');
+}
+
+async function runAIDayGenerate(day){
+  let key='';
+  try{key=localStorage.getItem('groq_key')||'';}catch(e){}
+  if(!key||!key.startsWith('gsk_')){toast('Please enter your Groq API key in Discover first.');return;}
+
+  const statusEl=document.getElementById('ai-generate-status');
+  if(statusEl){statusEl.style.display='block';statusEl.textContent='🤖 AI generating a meal for '+day+'…';}
+
+  const cats=getCatsForDay(day);
+  const catStr=cats.length?cats.map(c=>c.name).join(' or '):'any cuisine';
+  const mode=state.planMode||'guided';
+  const existingMeals=state.meals.slice(0,30).map(m=>m.name).join(', ');
+  const diet=(state.activeDiet&&state.activeDiet.appliedWeek===state.currentWeekNum)?state.activeDiet.goal:'';
+
+  const prompt=`You are a culinary expert. Suggest exactly 1 meal for ${day}.
+${mode==='guided'&&cats.length?`Category requirement: ${catStr}.`:'No category restriction — choose something varied and interesting.'}
+${diet?`Diet goal: ${diet}.`:''}
+Avoid these existing meals: ${existingMeals||'none'}.
+Return ONLY valid JSON (no markdown):
+{"name":"meal name","category":"one word","ingredients":["ing1","ing2","ing3"],"notes":"one sentence description"}`;
+
+  try{
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:300,temperature:0.8,
+        messages:[{role:'user',content:prompt}]})
+    });
+    const data=await resp.json();
+    if(data.error) throw new Error(data.error.message);
+    const text=(data.choices?.[0]?.message?.content||'').replace(/```json|```/g,'').trim();
+    const d=JSON.parse(text);
+    if(!d?.name) throw new Error('Invalid response');
+
+    // Find or create meal
+    let meal=state.meals.find(m=>m.name.toLowerCase()===d.name.toLowerCase());
+    if(!meal){
+      let cat=state.categories.find(c=>c.name.toLowerCase()===(d.category||'').toLowerCase());
+      if(!cat&&d.category){
+        cat={id:'cat_'+Date.now(),name:d.category,color:CAT_COLORS[state.categories.length%CAT_COLORS.length]};
+        state.categories.push(cat);
+      }
+      meal={id:'meal_'+Date.now(),name:d.name,categories:cat?[cat.id]:[],
+            ingredients:Array.isArray(d.ingredients)?d.ingredients:[],
+            notes:d.notes||'AI generated',lastUsedWeek:0};
+      state.meals.push(meal);
+    }
+    state.currentMenu[day]=[meal.id];
+    save();renderPlanner();renderMealList();
+    if(statusEl){statusEl.textContent='✅ AI suggested: '+meal.name+' for '+day;
+      setTimeout(()=>statusEl.style.display='none',3000);}
+    toast('🤖 '+day+': '+meal.name);
+  }catch(e){
+    if(statusEl){statusEl.textContent='⚠️ AI error: '+e.message;setTimeout(()=>statusEl.style.display='none',3000);}
+    // Fall back to pool
+    const used=new Set();
+    DAYS.forEach(d=>{if(d===day)return;(Array.isArray(state.currentMenu[d])?state.currentMenu[d]:[]).forEach(id=>used.add(id));});
+    state.currentMenu[day]=pickMealsForDay(day,used,true);
+    save();renderPlanner();
+    toast('⚠️ AI failed, used pool instead');
+  }
 }
 function renderPlanner(){
   const grid=document.getElementById('week-grid');
