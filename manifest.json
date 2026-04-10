@@ -1,0 +1,100 @@
+{
+  "id": "/Mise-en-place/",
+  "name": "Mise en Place - Smart Meal Planner",
+  "short_name": "Mise en Place",
+  "description": "Your personal weekly smart meal planner. Plan meals with AI, discover new dishes, track history and get health insights.",
+  "start_url": "/Mise-en-place/",
+  "scope": "/Mise-en-place/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait-primary",
+  "background_color": "#080D1A",
+  "theme_color": "#0F1629",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "food",
+    "health",
+    "lifestyle",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/Mise-en-place/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/Mise-en-place/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/Mise-en-place/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/Mise-en-place/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/Mise-en-place/screenshots/screenshot-narrow.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mise en Place weekly planner"
+    },
+    {
+      "src": "/Mise-en-place/screenshots/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Mise en Place on desktop"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Weekly Planner",
+      "short_name": "Planner",
+      "description": "Open weekly meal planner",
+      "url": "/Mise-en-place/",
+      "icons": [
+        {
+          "src": "/Mise-en-place/icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Discover Meals",
+      "short_name": "Discover",
+      "description": "Discover new meals with AI",
+      "url": "/Mise-en-place/",
+      "icons": [
+        {
+          "src": "/Mise-en-place/icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "iarc_rating_id": "",
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}
