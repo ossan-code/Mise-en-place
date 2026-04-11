@@ -672,6 +672,9 @@ header nav { display:none; }
           <button onclick="openDayCategoriesModal();closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);border-radius:8px;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
             <span>🗂</span><div><div style="font-weight:600;">Set Day Categories</div><div style="font-size:11px;color:var(--text-faint);">Assign categories to days</div></div>
           </button>
+          <button onclick="openPresetsModal();closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);border-radius:8px;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+            <span>⭐</span><div><div style="font-weight:600;">Diet Presets</div><div style="font-size:11px;color:var(--text-faint);">Save & apply category plans</div></div>
+          </button>
           <button onclick="showPanel('history');closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);border-radius:8px;text-align:left;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
             <span>📚</span><div><div style="font-weight:600;">History</div><div style="font-size:11px;color:var(--text-faint);">Browse past menus</div></div>
           </button>
@@ -687,7 +690,7 @@ header nav { display:none; }
             <button id="source-pool" onclick="setPlanSource('pool');closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--accent);background:var(--accent-glow);cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;color:var(--accent2);text-align:left;">
               <span>🗂</span><div><div>Meal Pool</div><div style="font-size:10px;font-weight:400;color:var(--text-faint);">Pick from your saved meals</div></div>
             </button>
-            <button id="source-ai" onclick="setPlanSource('ai');closePlannerMenu()" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;color:var(--text-soft);text-align:left;">
+            <button id="source-ai" onclick="requirePremium('AI Generate',()=>{setPlanSource('ai');closePlannerMenu()})"  style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;color:var(--text-soft);text-align:left;">
               <span>🤖</span><div><div>AI Generate</div><div style="font-size:10px;font-weight:400;color:var(--text-faint);">AI suggests new meals from web</div></div>
             </button>
           </div>
@@ -770,7 +773,10 @@ header nav { display:none; }
 
   <!-- SETTINGS -->
   <div id="panel-settings" class="panel">
-    <div class="section-title">Settings</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
+      <div class="section-title" style="margin:0;">Settings</div>
+      <div id="premium-status-badge"></div>
+    </div>
     <div class="section-sub">Categories, day rules, rotation, data</div>
     <div class="card settings-section">
       <h3>Categories</h3>
@@ -915,12 +921,12 @@ header nav { display:none; }
       <textarea id="chat-input" placeholder="Ask about calories, nutrition, meals…" rows="1"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"
         oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
-      <button class="btn btn-primary" onclick="sendChat()" id="chat-send-btn" style="padding:10px 16px;">➤</button>
+      <button class="btn btn-primary" onclick="requirePremium('Diet Chat',sendChat)" id="chat-send-btn" style="padding:10px 16px;">➤</button>
     </div>
   </div>
 
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v5 · Built Sunday 5 April 2026 12:00 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Saturday 11 April 2026 12:00 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
@@ -1000,7 +1006,7 @@ header nav { display:none; }
           <button id="mpd-2" onclick="setMealsPerDay(2)" style="padding:6px 16px;border-radius:18px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;background:transparent;color:var(--text-faint);transition:all .15s;">2</button>
         </div>
       </div>
-      <button class="btn btn-teal" id="diet-plan-btn" onclick="runAIDietPlan()" style="flex:1;">🎯 Generate Smart Plan</button>
+      <button class="btn btn-teal" id="diet-plan-btn" onclick="requirePremium('Smart Diet Plan',runAIDietPlan)" style="flex:1;">🎯 Generate Smart Plan</button>
     </div>
     <div id="diet-plan-output"></div>
     <div class="modal-footer">
@@ -1119,10 +1125,81 @@ header nav { display:none; }
     </div>
     <div id="shopping-list-content" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
     <hr>
+    <div style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;">Share via</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+      <button class="btn btn-outline btn-sm" onclick="shareShopWhatsApp()">💬 WhatsApp</button>
+      <button class="btn btn-outline btn-sm" onclick="shareShopTelegram()">✈️ Telegram</button>
+      <button class="btn btn-outline btn-sm" onclick="shareShopEmail()">✉️ Email</button>
+      <button class="btn btn-outline btn-sm" onclick="shareShopNative()" id="shop-native-btn" style="display:none;">📤 Share…</button>
+    </div>
     <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;">
       <button class="btn btn-outline btn-sm" onclick="closeShoppingModal()">Close</button>
       <button class="btn btn-outline btn-sm" onclick="copyShoppingList(false)">📋 Copy unchecked</button>
       <button class="btn btn-primary btn-sm" onclick="copyShoppingList(true)">📋 Copy all</button>
+    </div>
+  </div>
+</div>
+
+<!-- PREMIUM MODAL -->
+<div class="modal-overlay" id="premium-modal">
+  <div class="modal" style="width:460px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:8px;">⭐</div>
+    <div class="modal-title" style="font-size:20px;">Mise en Place Premium</div>
+    <p style="font-size:13px;color:var(--text-soft);margin-bottom:18px;line-height:1.6;">Unlock AI-powered features to take your meal planning to the next level.</p>
+    <div style="text-align:left;background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:18px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Premium includes</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text);">
+          <span style="color:var(--teal);flex-shrink:0;">✓</span><span><strong>Smart Diet Planner</strong> — AI personalised weekly category plan</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text);">
+          <span style="color:var(--teal);flex-shrink:0;">✓</span><span><strong>AI Meal Discover</strong> — AI-suggested meals with full recipes</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text);">
+          <span style="color:var(--teal);flex-shrink:0;">✓</span><span><strong>AI Planner Generate</strong> — AI creates your full week or single day</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text);">
+          <span style="color:var(--teal);flex-shrink:0;">✓</span><span><strong>Diet Chat Assistant</strong> — Calorie estimates, nutrition advice, meal help</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text);">
+          <span style="color:var(--teal);flex-shrink:0;">✓</span><span><strong>Health Insights</strong> — Weekly nutrition analysis of your meal history</span>
+        </div>
+      </div>
+    </div>
+    <div style="background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:22px;font-weight:800;color:#fff;">$2.99 <span style="font-size:14px;font-weight:400;opacity:.8;">one-time</span></div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;">No subscription. Pay once, own forever.</div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;font-size:15px;padding:14px;" onclick="activatePremium()">⭐ Upgrade to Premium</button>
+    <div style="margin-top:10px;">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('premium-modal').classList.remove('open')">Maybe later</button>
+      <span style="color:var(--text-faint);font-size:11px;margin-left:8px;">— or enter your key below —</span>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--text-faint);margin-bottom:6px;">Already have a Groq API key? Use your own (free)</div>
+      <div style="display:flex;gap:7px;">
+        <input type="text" id="premium-groq-key" placeholder="gsk_…" style="flex:1;font-size:12px;">
+        <button class="btn btn-outline btn-sm" onclick="saveGroqFromPremium()">Use Key</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DIET PRESETS MODAL -->
+<div class="modal-overlay" id="presets-modal">
+  <div class="modal" style="width:480px;">
+    <div class="modal-title">⭐ Saved Diet Presets</div>
+    <p style="font-size:12px;color:var(--text-faint);margin-bottom:12px;">Apply any preset to instantly update your day categories.</p>
+    <div id="presets-list" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;margin-bottom:14px;"></div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Save Current Settings as Preset</div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="preset-name-input" placeholder="Preset name (e.g. Summer Plan, Weight Loss)…" style="flex:1;">
+        <button class="btn btn-teal btn-sm" onclick="saveCurrentAsPreset()">⭐ Save</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('presets-modal').classList.remove('open')">Close</button>
     </div>
   </div>
 </div>
@@ -1190,7 +1267,7 @@ window.onerror = function(msg, src, line, col, err) {
 };
 
 // ── STATE ─────────────────────────────────────────────────────
-let state={meals:[],categories:[],dayAssignments:{},rotationWeeks:4,currentMenu:{},currentWeekNum:0,currentYear:new Date().getFullYear(),editingHistoryId:null,menuHistory:[]};
+let state={meals:[],categories:[],dayAssignments:{},rotationWeeks:4,currentMenu:{},currentWeekNum:0,currentYear:new Date().getFullYear(),editingHistoryId:null,menuHistory:[],dietPresets:[],isPremium:false};
 const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const CAT_COLORS=['cat-red','cat-teal','cat-purple','cat-gold','cat-green','cat-pink','cat-blue','cat-orange'];
 
@@ -1240,7 +1317,7 @@ function showPanel(name){
   if(name==='meals')renderMealList();
   if(name==='history')renderHistoryPanel();
   if(name==='stats')renderStats();
-  if(name==='settings')renderSettings();
+  if(name==='settings'){renderSettings();renderPremiumBadge();}
   if(name==='discover')initDiscover();
   if(name==='chat')initChat();
 }
@@ -1376,7 +1453,7 @@ ${mode==='guided'&&cats.length?`Category requirement: ${catStr}.`:'No category r
 ${diet?`Diet goal: ${diet}.`:''}
 Avoid these existing meals: ${existingMeals||'none'}.
 Return ONLY valid JSON (no markdown):
-{"name":"meal name","category":"one word","ingredients":["ing1","ing2","ing3"],"notes":"one sentence description"}`;
+{"name":"meal name","category":"one word","ingredients":["200g ingredient","2 tbsp ingredient"],"notes":"one sentence description","recipe":"Step 1: prep ingredients|Step 2: cook|Step 3: plate and serve"}`;
 
   try{
     const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -1607,7 +1684,17 @@ function renderHistDetail(entry){
       if(!m) return '';
       const mc=m.categories.length?state.categories.find(c=>m.categories.includes(c.id)):null;
       const tag=mc?`<span class="tag ${mc.color}" style="font-size:9px;padding:1px 5px;margin-right:3px;">${mc.name}</span>`:'';
-      return `<div style="${i>0?'margin-top:5px;padding-top:5px;border-top:1px solid var(--border);':''}font-size:12px;color:var(--text);">${tag}${m.name}</div>`;
+      const hasRecipe=m.recipe&&m.recipe.length>0;
+      const recipeId=`hist-recipe-${entry.id}-${mid}`;
+      const recipeHtml=hasRecipe?`
+        <div id="${recipeId}" style="display:none;margin-top:5px;padding:6px 8px;background:var(--surface3);border-radius:6px;font-size:11px;color:var(--text-faint);line-height:1.7;">
+          ${m.recipe.split('|').map((s,si)=>`<div>${si+1}. ${s.trim()}</div>`).join('')}
+        </div>`:'' ;
+      const recipeBtn=hasRecipe?`<button onclick="const el=document.getElementById('${recipeId}');el.style.display=el.style.display==='none'?'block':'none';" style="font-size:10px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--accent2);margin-left:4px;">📋</button>`:'';
+      return `<div style="${i>0?'margin-top:5px;padding-top:5px;border-top:1px solid var(--border);':''}font-size:12px;color:var(--text);">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;">${tag}${m.name}${recipeBtn}</div>
+        ${recipeHtml}
+      </div>`;
     }).join('');
     return `<div style="background:var(--surface2);border-radius:8px;padding:9px 11px;">
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:var(--accent2);margin-bottom:4px;">${day.slice(0,3)}</div>
@@ -1867,6 +1954,8 @@ function exportShoppingList(){
 
   renderShopList();
   document.getElementById('shopping-modal').classList.add('open');
+  const snb=document.getElementById('shop-native-btn');
+  if(snb) snb.style.display=navigator.share?'inline-flex':'none';
   setTimeout(()=>document.getElementById('shop-new-item').focus(),100);
 }
 function renderShopList(){
@@ -1966,26 +2055,51 @@ function shopRename(id,newText){const i=shopItems.find(i=>i.id===id);const t=new
 function shopDelete(id){shopItems=shopItems.filter(i=>i.id!==id);renderShopList();}
 function shopClearChecked(){shopItems=shopItems.filter(i=>!i.checked);renderShopList();}
 function shopCheckAll(v){shopItems.forEach(i=>i.checked=v);renderShopList();}
-function copyShoppingList(all){
+function buildShoppingText(all){
   const target=all?shopItems:shopItems.filter(i=>!i.checked);
-  if(!target.length){toast('Nothing to copy!');return;}
-  // Group by section for copy output
-  let lines=[];
+  if(!target.length) return '';
   const weekLbl=weekLabel(state.currentWeekNum,state.currentYear);
-  lines.push(`🛒 Shopping List — Week of ${weekLbl}`);
-  lines.push('');
+  let lines=[`🛒 Shopping List — Week of ${weekLbl}`,''];
   const sectionOrder=[...DAYS,'manual'];
   sectionOrder.forEach(sec=>{
-    const items=target.filter(i=>(i.section||'manual')===sec);
-    if(!items.length)return;
-    const header=DAYS.includes(sec)?`── ${sec} ──`:`── Added Manually ──`;
-    lines.push(header);
-    items.forEach(i=>lines.push((all?(i.checked?'☑ ':'☐ '):'')+i.text));
+    const secItems=target.filter(i=>(i.section||'manual')===sec);
+    if(!secItems.length) return;
+    if(DAYS.includes(sec)){
+      lines.push(`📅 ${sec}`);
+      // Group by meal within the day
+      const mealGroups={};
+      secItems.forEach(i=>{
+        const key=i.mealName||'Other';
+        if(!mealGroups[key]) mealGroups[key]=[];
+        mealGroups[key].push(i);
+      });
+      Object.entries(mealGroups).forEach(([mealName,items])=>{
+        lines.push(`  🍽 ${mealName}`);
+        items.forEach(i=>lines.push(`    ${all?(i.checked?'☑ ':'☐ '):''}• ${i.text}`));
+      });
+    } else {
+      lines.push('✏️ Added Manually');
+      secItems.forEach(i=>lines.push(`  ${all?(i.checked?'☑ ':'☐ '):''}• ${i.text}`));
+    }
     lines.push('');
   });
-  const text=lines.join('\n').trim();
-  navigator.clipboard.writeText(text).then(()=>toast(`📋 Copied ${target.length} item${target.length!==1?'s':''}!`));
+  lines.push('Made with Mise en Place 🍴');
+  return lines.join('\n').trim();
 }
+function copyShoppingList(all){
+  const text=buildShoppingText(all);
+  if(!text){toast('Nothing to copy!');return;}
+  const count=(all?shopItems:shopItems.filter(i=>!i.checked)).length;
+  navigator.clipboard.writeText(text).then(()=>toast(`📋 Copied ${count} item${count!==1?'s':''}!`));
+}
+function shareShopWhatsApp(){const t=buildShoppingText(false)||buildShoppingText(true);if(!t)return;window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');}
+function shareShopTelegram(){const t=buildShoppingText(false)||buildShoppingText(true);if(!t)return;window.open('https://t.me/share/url?url=&text='+encodeURIComponent(t),'_blank');}
+function shareShopEmail(){
+  const t=buildShoppingText(false)||buildShoppingText(true);if(!t)return;
+  const wl=weekLabel(state.currentWeekNum,state.currentYear);
+  window.open('mailto:?subject='+encodeURIComponent('Shopping List — Week of '+wl)+'&body='+encodeURIComponent(t));
+}
+function shareShopNative(){const t=buildShoppingText(false)||buildShoppingText(true);if(!t)return;if(navigator.share)navigator.share({title:'Shopping List',text:t});}
 function closeShoppingModal(){document.getElementById('shopping-modal').classList.remove('open');shopItems=[];}
 
 
@@ -2395,6 +2509,7 @@ function applyDietPlan(planStr){
   setPlanMode('guided');
   renderActiveDietBadge();
   toast('✅ Smart Diet Plan applied to your week!');
+  setTimeout(()=>promptSaveDietPreset(goalText.trim()),600);
 }
 
 function renderActiveDietBadge(){
@@ -2659,24 +2774,84 @@ function shareHistEntry(entryId){
   const diet=entry.dietPlan?`\n🎯 Diet Plan: ${entry.dietPlan.goal}`:'';
   const wl=entry.weekLabel||`Week ${entry.weekNum}, ${entry.year}`;
   let lines=[`🍽️ Meal Plan — Week of ${wl}${diet}`,`Accepted: ${entry.date}`,'━'.repeat(32)];
+
+  // Meal plan section
   DAYS.forEach(day=>{
     const mids=Array.isArray(entry.menu[day])?entry.menu[day]:(entry.menu[day]?[entry.menu[day]]:[]);
-    // Look up meal names — handle case where meal was deleted from pool
-    const mealNames=mids.map(id=>{
-      const m=state.meals.find(m=>m.id===id);
-      return m?m.name:null;
-    }).filter(Boolean);
+    const meals=mids.map(id=>state.meals.find(m=>m.id===id)).filter(Boolean);
     lines.push('');
     lines.push(`📅 ${day}`);
-    if(mealNames.length) mealNames.forEach(n=>lines.push(`   🥘 ${n}`));
+    if(meals.length) meals.forEach(m=>lines.push(`   🥘 ${m.name}`));
     else lines.push('   —');
   });
+
+  // Shopping list grouped by meal
+  const allMeals=[];
+  DAYS.forEach(day=>{
+    const mids=Array.isArray(entry.menu[day])?entry.menu[day]:(entry.menu[day]?[entry.menu[day]]:[]);
+    mids.forEach(id=>{const m=state.meals.find(x=>x.id===id);if(m&&m.ingredients?.length)allMeals.push(m);});
+  });
+  if(allMeals.length){
+    lines.push('');
+    lines.push('━'.repeat(32));
+    lines.push('🛒 Shopping List');
+    allMeals.forEach(m=>{
+      lines.push('');
+      lines.push(`  🍽 ${m.name}`);
+      m.ingredients.forEach(ing=>lines.push(`    • ${ing}`));
+    });
+  }
+
   lines.push('');
   lines.push('Made with Mise en Place 🍴');
-  // Use openShareModal so all share buttons use this text
   openShareModal(lines.join('\n'), 'Meal Plan — Week of '+wl);
 }
 
+
+
+// ══════════════════════════════════════════════════════════════
+// PREMIUM ACCOUNT
+// ══════════════════════════════════════════════════════════════
+function isPremiumUser(){
+  // Premium if: state.isPremium flag set (in-app purchase), OR valid Groq key stored
+  if(state.isPremium) return true;
+  try{const k=localStorage.getItem('groq_key')||'';return k.startsWith('gsk_');}catch(e){return false;}
+}
+
+function requirePremium(featureName, callback){
+  if(isPremiumUser()){callback();return;}
+  // Show premium modal
+  document.getElementById('premium-modal').classList.add('open');
+}
+
+function openPremiumModal(){document.getElementById("premium-modal").classList.add("open");}
+function activatePremium(){
+  // In a real app store this would trigger the in-app purchase flow
+  // For web/sideload, it sets the flag and stores it
+  state.isPremium=true;
+  save();
+  document.getElementById('premium-modal').classList.remove('open');
+  toast('⭐ Welcome to Premium! All AI features unlocked.');
+  // Re-render to show premium features
+  renderPlanner();
+}
+
+function saveGroqFromPremium(){
+  const key=(document.getElementById('premium-groq-key')?.value||'').trim();
+  if(!key.startsWith('gsk_')){toast('Invalid Groq key — must start with gsk_');return;}
+  try{localStorage.setItem('groq_key',key);}catch(e){}
+  document.getElementById('premium-modal').classList.remove('open');
+  toast('✅ Groq key saved! AI features unlocked.');
+}
+
+// Show premium badge in settings if premium
+function renderPremiumBadge(){
+  const existing=document.getElementById('premium-status-badge');
+  if(!existing) return;
+  existing.innerHTML=isPremiumUser()
+    ?'<span style="color:var(--gold);font-weight:700;">⭐ Premium Active</span>'
+    :'<button class="btn btn-primary btn-sm" onclick="openPremiumModal()">⭐ Upgrade to Premium</button>';
+}
 
 // ══════════════════════════════════════════════════════════════
 // DIET CHAT
@@ -2778,7 +2953,7 @@ async function sendChat(){
 
 function sendSuggestion(text){
   const inp=document.getElementById('chat-input');
-  if(inp){inp.value=text;sendChat();}
+  if(inp){inp.value=text;requirePremium('Diet Chat',sendChat);}
 }
 
 function clearChat(){
@@ -2840,16 +3015,17 @@ ${diet?`Diet goal: ${diet}.`:''}
 ${mode==='guided'?`Day category requirements: ${dayReqs}`:'No category restrictions — choose varied, balanced meals.'}
 Existing meal pool to AVOID repeating: ${state.meals.slice(0,20).map(m=>m.name).join(', ')||'none'}.
 
-Return ONLY valid JSON with this exact structure — no markdown:
+Return ONLY valid JSON with this exact structure — no markdown, no extra fields:
 {
-  "Monday": {"name":"meal name","category":"one word","ingredients":["ing1","ing2"],"notes":"one sentence"},
-  "Tuesday": {"name":"...","category":"...","ingredients":[...],"notes":"..."},
-  "Wednesday": {"name":"...","category":"...","ingredients":[...],"notes":"..."},
-  "Thursday": {"name":"...","category":"...","ingredients":[...],"notes":"..."},
-  "Friday": {"name":"...","category":"...","ingredients":[...],"notes":"..."},
-  "Saturday": {"name":"...","category":"...","ingredients":[...],"notes":"..."},
-  "Sunday": {"name":"...","category":"...","ingredients":[...],"notes":"..."}
-}`;
+  "Monday": {"name":"meal name","category":"one word","ingredients":["200g chicken","2 cloves garlic"],"notes":"one sentence description","recipe":"Step 1: prep|Step 2: cook|Step 3: serve"},
+  "Tuesday": {"name":"...","category":"...","ingredients":[...],"notes":"...","recipe":"Step 1: ...|Step 2: ...|Step 3: ..."},
+  "Wednesday": {"name":"...","category":"...","ingredients":[...],"notes":"...","recipe":"..."},
+  "Thursday": {"name":"...","category":"...","ingredients":[...],"notes":"...","recipe":"..."},
+  "Friday": {"name":"...","category":"...","ingredients":[...],"notes":"...","recipe":"..."},
+  "Saturday": {"name":"...","category":"...","ingredients":[...],"notes":"...","recipe":"..."},
+  "Sunday": {"name":"...","category":"...","ingredients":[...],"notes":"...","recipe":"..."}
+}
+The recipe field should have 4-6 pipe-separated cooking steps. Keep each step concise.`;
 
   try{
     const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -2884,8 +3060,12 @@ Return ONLY valid JSON with this exact structure — no markdown:
         meal={id:'meal_'+Date.now()+'_'+Math.random().toString(36).slice(2),
               name:d.name,categories:cat?[cat.id]:[],
               ingredients:Array.isArray(d.ingredients)?d.ingredients:[],
-              notes:d.notes||'AI generated',lastUsedWeek:0};
+              notes:d.notes||'AI generated',
+              recipe:d.recipe||'',
+              lastUsedWeek:0};
         state.meals.push(meal);
+      } else if(d.recipe&&!meal.recipe){
+        meal.recipe=d.recipe; // update recipe if existing meal lacks one
       }
       menu[day]=[meal.id];
     });
@@ -2903,6 +3083,108 @@ Return ONLY valid JSON with this exact structure — no markdown:
     toast('AI generate failed: '+e.message);
     setPlanSource('pool');
   }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// DIET PLAN PRESETS
+// ══════════════════════════════════════════════════════════════
+function openPresetsModal(){
+  renderPresetsList();
+  document.getElementById('presets-modal').classList.add('open');
+}
+
+function renderPresetsList(){
+  if(!state.dietPresets) state.dietPresets=[];
+  const el=document.getElementById('presets-list');
+  if(!state.dietPresets.length){
+    el.innerHTML='<div style="text-align:center;color:var(--text-faint);font-size:13px;padding:20px;">No presets saved yet.<br>Set up your day categories or apply a Smart Diet Plan, then save it as a preset.</div>';
+    return;
+  }
+  el.innerHTML=state.dietPresets.map((p,i)=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;color:var(--text);font-size:13px;margin-bottom:3px;">${p.name}</div>
+        <div style="font-size:11px;color:var(--text-faint);">
+          ${DAYS.map(d=>{
+            const multi=(p.dayAssignmentMulti||{})[d];
+            const single=p.dayAssignments[d];
+            const cats=multi&&multi.length>1
+              ?multi.map(id=>(state.categories.find(c=>c.id===id)||{name:'?'}).name).join('+')
+              :single?(state.categories.find(c=>c.id===single)||{name:'?'}).name:'Any';
+            return `<span style="margin-right:6px;">${d.slice(0,3)}: <strong>${cats}</strong></span>`;
+          }).join('')}
+        </div>
+        ${p.dietGoal?`<div style="font-size:11px;color:var(--teal);margin-top:3px;">🎯 ${p.dietGoal}</div>`:''}
+        <div style="font-size:10px;color:var(--text-faint);margin-top:2px;">Saved ${p.date}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+        <button class="btn btn-teal btn-sm" onclick="applyPreset(${i})">Apply</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePreset(${i})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function saveCurrentAsPreset(){
+  const nameEl=document.getElementById('preset-name-input');
+  const name=(nameEl?.value||'').trim();
+  if(!name){toast('Please enter a preset name.');return;}
+  if(!state.dietPresets) state.dietPresets=[];
+  const preset={
+    name,
+    date: new Date().toLocaleDateString(),
+    dayAssignments: {...state.dayAssignments},
+    dayAssignmentMulti: JSON.parse(JSON.stringify(state.dayAssignmentMulti||{})),
+    planMode: state.planMode||'guided',
+    dietGoal: (state.activeDiet&&state.activeDiet.appliedWeek===state.currentWeekNum)?state.activeDiet.goal:''
+  };
+  state.dietPresets.unshift(preset);
+  save();
+  if(nameEl) nameEl.value='';
+  renderPresetsList();
+  toast('⭐ Preset saved: '+name);
+}
+
+function applyPreset(idx){
+  if(!state.dietPresets) return;
+  const p=state.dietPresets[idx];
+  if(!p) return;
+  state.dayAssignments={...p.dayAssignments};
+  state.dayAssignmentMulti=JSON.parse(JSON.stringify(p.dayAssignmentMulti||{}));
+  if(p.planMode) state.planMode=p.planMode;
+  save();
+  document.getElementById('presets-modal').classList.remove('open');
+  generateMenu();
+  setPlanMode(state.planMode||'guided');
+  toast('✅ Applied preset: '+p.name);
+}
+
+function deletePreset(idx){
+  if(!state.dietPresets) return;
+  const name=state.dietPresets[idx]?.name||'preset';
+  if(!confirm('Delete preset "'+name+'"?')) return;
+  state.dietPresets.splice(idx,1);
+  save();
+  renderPresetsList();
+  toast('Deleted.');
+}
+
+// Also add a "Save as Preset" button to applyDietPlan result
+// (called after diet plan applied)
+function promptSaveDietPreset(goal){
+  if(!confirm('Would you like to save this Smart Diet Plan as a preset for future use?')) return;
+  const name=goal.length>30?goal.slice(0,30)+'…':goal;
+  if(!state.dietPresets) state.dietPresets=[];
+  state.dietPresets.unshift({
+    name:'🎯 '+name,
+    date: new Date().toLocaleDateString(),
+    dayAssignments: {...state.dayAssignments},
+    dayAssignmentMulti: JSON.parse(JSON.stringify(state.dayAssignmentMulti||{})),
+    planMode: 'guided',
+    dietGoal: goal
+  });
+  save();
+  toast('⭐ Diet plan saved as preset!');
 }
 
 // ── TOAST & KEYBOARD
