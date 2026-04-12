@@ -763,11 +763,30 @@ header nav { display:none; }
       <button class="btn btn-outline btn-sm" onclick="showPanel('history')">📚 History</button>
     </div>
     <div class="section-sub">How your meal plan looks over time</div>
-    <div class="stats-grid" id="stats-grid"></div>
-    <div id="health-insights-wrap" style="margin-bottom:16px;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-      <div class="card"><h3 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:13px;color:var(--text-soft);">Most Used Meals</h3><div id="stats-top-meals"></div></div>
-      <div class="card"><h3 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:13px;color:var(--text-soft);">Category Distribution</h3><div id="stats-cats"></div></div>
+    <!-- Premium gate for stats -->
+    <div id="stats-premium-gate" style="display:none;text-align:center;padding:40px 20px;">
+      <div style="font-size:40px;margin-bottom:12px;">⭐</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;">Premium Feature</div>
+      <p style="font-size:13px;color:var(--text-faint);margin-bottom:16px;">Health Insights and detailed stats are available with Premium.</p>
+      <button class="btn btn-primary" onclick="openPremiumModal()">⭐ Activate Premium</button>
+    </div>
+    <!-- Stats content — shown when premium -->
+    <div id="stats-content">
+      <!-- Ask AI button -->
+      <div style="background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(34,211,238,0.08));border:1px solid rgba(108,99,255,0.25);border-radius:10px;padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:20px;">💬</span>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:var(--accent2);">Ask your Diet Assistant</div>
+          <div style="font-size:11px;color:var(--text-faint);">Chat about your stats, calories, balance or nutrition</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="askAboutStats()">Ask AI</button>
+      </div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div id="health-insights-wrap" style="margin-bottom:16px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="card"><h3 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:13px;color:var(--text-soft);">Most Used Meals</h3><div id="stats-top-meals"></div></div>
+        <div class="card"><h3 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:13px;color:var(--text-soft);">Category Distribution</h3><div id="stats-cats"></div></div>
+      </div>
     </div>
   </div>
 
@@ -790,6 +809,18 @@ header nav { display:none; }
       <h3>Day Assignments</h3>
       <p style="font-size:12px;color:var(--text-faint);margin-bottom:11px;">Default meal category for each day.</p>
       <div id="day-assignments"></div>
+    </div>
+    <div class="card settings-section" id="settings-groq-section" style="display:none;">
+      <h3>🤖 AI Connection (Groq)</h3>
+      <p style="font-size:12px;color:var(--text-faint);margin-bottom:11px;">
+        Your free Groq API key powers all AI features. Get yours at
+        <a href="https://console.groq.com" target="_blank" style="color:var(--teal);">console.groq.com</a>.
+      </p>
+      <div id="groq-key-status" style="font-size:12px;margin-bottom:9px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="password" id="settings-groq-key" placeholder="gsk_…" style="flex:1;font-size:12px;">
+        <button class="btn btn-teal btn-sm" onclick="saveGroqKeyFromSettings()">Save Key</button>
+      </div>
     </div>
     <div class="card settings-section">
       <h3>Rotation Rule</h3>
@@ -906,10 +937,11 @@ header nav { display:none; }
     </div>
     <!-- Quick suggestions -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="chat-suggestions">
+      <button class="chat-suggestion" onclick="sendSuggestion(this.textContent)">📊 Analyse my stats & insights</button>
       <button class="chat-suggestion" onclick="sendSuggestion(this.textContent)">How many calories in my current week?</button>
+      <button class="chat-suggestion" onclick="sendSuggestion(this.textContent)">Is my diet balanced this week?</button>
       <button class="chat-suggestion" onclick="sendSuggestion(this.textContent)">What meals have the most protein?</button>
       <button class="chat-suggestion" onclick="sendSuggestion(this.textContent)">Suggest a heart-friendly meal</button>
-      <button class="chat-suggestion" onclick="sendSuggestion(this.textContent)">Is my diet balanced this week?</button>
     </div>
     <div class="chat-messages" id="chat-messages">
       <div class="chat-bubble bot">
@@ -926,7 +958,7 @@ header nav { display:none; }
   </div>
 
   <!-- Version footer -->
-  <div class="version-footer">Mise en Place v5 · Built Saturday 11 April 2026 12:00 UTC</div>
+  <div class="version-footer">Mise en Place v5 · Built Sunday 12 April 2026 12:00 UTC</div>
   <div id="panel-more" class="panel"></div>
 </main>
 
@@ -1144,43 +1176,43 @@ header nav { display:none; }
 <div class="modal-overlay" id="premium-modal">
   <div class="modal" style="width:460px;text-align:center;">
     <div style="font-size:48px;margin-bottom:8px;">⭐</div>
-    <div class="modal-title" style="font-size:20px;">Mise en Place Premium</div>
-    <p style="font-size:13px;color:var(--text-soft);margin-bottom:18px;line-height:1.6;">Unlock AI-powered features to take your meal planning to the next level.</p>
-    <div style="text-align:left;background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:18px;">
-      <div style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Premium includes</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text);">
-          <span style="color:var(--teal);flex-shrink:0;">✓</span><span><strong>Smart Diet Planner</strong> — AI personalised weekly category plan</span>
-        </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text);">
-          <span style="color:var(--teal);flex-shrink:0;">✓</span><span><strong>AI Meal Discover</strong> — AI-suggested meals with full recipes</span>
-        </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text);">
-          <span style="color:var(--teal);flex-shrink:0;">✓</span><span><strong>AI Planner Generate</strong> — AI creates your full week or single day</span>
-        </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text);">
-          <span style="color:var(--teal);flex-shrink:0;">✓</span><span><strong>Diet Chat Assistant</strong> — Calorie estimates, nutrition advice, meal help</span>
-        </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text);">
-          <span style="color:var(--teal);flex-shrink:0;">✓</span><span><strong>Health Insights</strong> — Weekly nutrition analysis of your meal history</span>
-        </div>
+    <div class="modal-title" style="font-size:20px;">Activate Premium</div>
+    <p style="font-size:13px;color:var(--text-soft);margin-bottom:16px;line-height:1.6;">Unlock all AI-powered features for a small one-time fee.</p>
+
+    <!-- Feature list -->
+    <div style="text-align:left;background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Premium features</div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div style="display:flex;gap:10px;font-size:13px;color:var(--text);"><span style="color:var(--teal);">✓</span><span><strong>Smart Diet Planner</strong> — AI personalised weekly plan</span></div>
+        <div style="display:flex;gap:10px;font-size:13px;color:var(--text);"><span style="color:var(--teal);">✓</span><span><strong>AI Meal Discovery</strong> — New recipes with full instructions</span></div>
+        <div style="display:flex;gap:10px;font-size:13px;color:var(--text);"><span style="color:var(--teal);">✓</span><span><strong>AI Planner Generate</strong> — AI builds your week automatically</span></div>
+        <div style="display:flex;gap:10px;font-size:13px;color:var(--text);"><span style="color:var(--teal);">✓</span><span><strong>Diet Chat Assistant</strong> — Calories, nutrition, meal advice</span></div>
+        <div style="display:flex;gap:10px;font-size:13px;color:var(--text);"><span style="color:var(--teal);">✓</span><span><strong>Health Insights</strong> — Nutrition analysis of your history</span></div>
       </div>
     </div>
+
+    <!-- Price + buy -->
     <div style="background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:22px;font-weight:800;color:#fff;">$2.99 <span style="font-size:14px;font-weight:400;opacity:.8;">one-time</span></div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;">No subscription. Pay once, own forever.</div>
+      <div style="font-size:24px;font-weight:800;color:#fff;">$0.99 <span style="font-size:13px;font-weight:400;opacity:.8;">one-time · no subscription</span></div>
     </div>
-    <button class="btn btn-primary" style="width:100%;font-size:15px;padding:14px;" onclick="activatePremium()">⭐ Upgrade to Premium</button>
-    <div style="margin-top:10px;">
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('premium-modal').classList.remove('open')">Maybe later</button>
-      <span style="color:var(--text-faint);font-size:11px;margin-left:8px;">— or enter your key below —</span>
-    </div>
-    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-      <div style="font-size:11px;color:var(--text-faint);margin-bottom:6px;">Already have a Groq API key? Use your own (free)</div>
+    <button class="btn btn-primary" style="width:100%;font-size:15px;padding:14px;margin-bottom:8px;" onclick="activatePremium()">⭐ Activate Premium — $0.99</button>
+
+    <!-- Step 2: Groq key — shown after purchase -->
+    <div id="groq-key-section" style="display:none;margin-top:14px;padding:14px;background:var(--surface2);border-radius:12px;border:1px solid var(--border-bright);text-align:left;">
+      <div style="font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:4px;">Step 2 — Connect your AI</div>
+      <p style="font-size:12px;color:var(--text-faint);margin-bottom:10px;line-height:1.5;">
+        This app uses <strong style="color:var(--text);">Groq</strong> for AI — it's free to use.
+        Get your free API key at <a href="https://console.groq.com" target="_blank" style="color:var(--teal);">console.groq.com</a> and paste it below.
+      </p>
       <div style="display:flex;gap:7px;">
-        <input type="text" id="premium-groq-key" placeholder="gsk_…" style="flex:1;font-size:12px;">
-        <button class="btn btn-outline btn-sm" onclick="saveGroqFromPremium()">Use Key</button>
+        <input type="text" id="premium-groq-key" placeholder="gsk_…" style="flex:1;font-size:12px;" onkeydown="if(event.key==='Enter')saveGroqFromPremium()">
+        <button class="btn btn-teal" onclick="saveGroqFromPremium()">✓ Connect</button>
       </div>
+      <div style="font-size:11px;color:var(--text-faint);margin-top:8px;">Your key is stored only on this device and never sent anywhere except Groq's API.</div>
+    </div>
+
+    <div style="margin-top:10px;">
+      <button class="btn btn-ghost btn-sm" onclick="closePremiumModal()">Maybe later</button>
     </div>
   </div>
 </div>
@@ -1317,7 +1349,7 @@ function showPanel(name){
   if(name==='meals')renderMealList();
   if(name==='history')renderHistoryPanel();
   if(name==='stats')renderStats();
-  if(name==='settings'){renderSettings();renderPremiumBadge();}
+  if(name==='settings'){renderSettings();renderPremiumBadge();updateGroqKeyStatus();}
   if(name==='discover')initDiscover();
   if(name==='chat')initChat();
 }
@@ -1797,6 +1829,16 @@ function renderMealList(){
 
 // ── STATS ─────────────────────────────────────────────────────
 function renderStats(){
+  // Premium gate
+  const gate=document.getElementById('stats-premium-gate');
+  const content=document.getElementById('stats-content');
+  if(!isPremiumUser()){
+    if(gate) gate.style.display='block';
+    if(content) content.style.display='none';
+    return;
+  }
+  if(gate) gate.style.display='none';
+  if(content) content.style.display='block';
   renderHealthInsights();
   const umap={};state.menuHistory.forEach(e=>Object.values(e.menu).forEach(id=>{if(id)umap[id]=(umap[id]||0)+1;}));
   document.getElementById('stats-grid').innerHTML=`<div class="stat-card"><div class="stat-num">${state.meals.length}</div><div class="stat-label">Meals in Pool</div></div><div class="stat-card"><div class="stat-num">${state.menuHistory.length}</div><div class="stat-label">Accepted Menus</div></div><div class="stat-card"><div class="stat-num">${state.categories.length}</div><div class="stat-label">Categories</div></div>`;
@@ -1816,6 +1858,14 @@ function renderSettings(){
   document.getElementById('categories-list').innerHTML=state.categories.map(c=>`<div style="display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);border-radius:20px;padding:4px 10px;margin:2px;background:var(--surface2);"><span class="tag ${c.color}" style="background:transparent;border:none;padding:0;">${c.name}</span><button onclick="deleteCat('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-faint);font-size:15px;line-height:1;padding:0 2px;">×</button></div>`).join('');
   document.getElementById('day-assignments').innerHTML=DAYS.map(day=>`<div class="day-assignment"><span class="day-label">${day}</span><select style="max-width:175px;" onchange="setDayAssignment('${day}',this.value)"><option value="">— Any meal —</option>${state.categories.map(c=>`<option value="${c.id}" ${state.dayAssignments[day]===c.id?'selected':''}>${c.name}</option>`).join('')}</select></div>`).join('');
   document.getElementById('rotation-weeks').value=state.rotationWeeks;
+}
+function updateGroqKeyStatus(){
+  const el=document.getElementById('groq-key-status');
+  if(!el) return;
+  const connected=hasGroqKey();
+  el.innerHTML=connected
+    ?'<span style="color:var(--green);">✓ AI connected and ready</span>'
+    :'<span style="color:var(--text-faint);">No key saved — paste your Groq key below</span>';
 }
 function addCategory(){const inp=document.getElementById('new-cat-input');const name=inp.value.trim();if(!name)return;if(state.categories.find(c=>c.name.toLowerCase()===name.toLowerCase())){toast('Already exists.');return;}state.categories.push({id:'cat_'+Date.now(),name,color:CAT_COLORS[state.categories.length%CAT_COLORS.length]});inp.value='';save();renderSettings();toast('Category added!');}
 function deleteCat(id){if(!confirm('Delete this category?'))return;state.categories=state.categories.filter(c=>c.id!==id);state.meals.forEach(m=>m.categories=m.categories.filter(cid=>cid!==id));Object.keys(state.dayAssignments).forEach(d=>{if(state.dayAssignments[d]===id)state.dayAssignments[d]='';});save();renderSettings();renderMealList();}
@@ -2813,9 +2863,12 @@ function shareHistEntry(entryId){
 // PREMIUM ACCOUNT
 // ══════════════════════════════════════════════════════════════
 function isPremiumUser(){
-  // Premium if: state.isPremium flag set (in-app purchase), OR valid Groq key stored
-  if(state.isPremium) return true;
-  try{const k=localStorage.getItem('groq_key')||'';return k.startsWith('gsk_');}catch(e){return false;}
+  // Premium requires: isPremium flag AND a valid Groq key stored
+  if(!state.isPremium) return false;
+  try{return (localStorage.getItem('groq_key')||'').startsWith('gsk_');}catch(e){return false;}
+}
+function hasGroqKey(){
+  try{return (localStorage.getItem('groq_key')||'').startsWith('gsk_');}catch(e){return false;}
 }
 
 function requirePremium(featureName, callback){
@@ -2824,33 +2877,72 @@ function requirePremium(featureName, callback){
   document.getElementById('premium-modal').classList.add('open');
 }
 
-function openPremiumModal(){document.getElementById("premium-modal").classList.add("open");}
+function openPremiumModal(){
+  const modal=document.getElementById("premium-modal");
+  // Reset to step 1 if not yet premium
+  if(!state.isPremium){
+    const ks=document.getElementById('groq-key-section');
+    if(ks) ks.style.display='none';
+  }
+  modal.classList.add("open");
+}
+function closePremiumModal(){
+  document.getElementById('premium-modal').classList.remove('open');
+  renderPremiumBadge();
+}
+
 function activatePremium(){
-  // In a real app store this would trigger the in-app purchase flow
-  // For web/sideload, it sets the flag and stores it
+  // In production this triggers the in-app purchase (Google Play Billing / App Store)
+  // After successful payment, set the flag and show step 2 (Groq key)
   state.isPremium=true;
   save();
-  document.getElementById('premium-modal').classList.remove('open');
-  toast('⭐ Welcome to Premium! All AI features unlocked.');
-  // Re-render to show premium features
-  renderPlanner();
+  // Show step 2 — Groq key setup
+  const ks=document.getElementById('groq-key-section');
+  if(ks) ks.style.display='block';
+  // Scroll to key section
+  ks?.scrollIntoView({behavior:'smooth',block:'nearest'});
+  toast('⭐ Premium activated! Now connect your free AI key below.');
 }
 
 function saveGroqFromPremium(){
+  if(!state.isPremium){
+    toast('Please activate Premium first.');return;
+  }
   const key=(document.getElementById('premium-groq-key')?.value||'').trim();
-  if(!key.startsWith('gsk_')){toast('Invalid Groq key — must start with gsk_');return;}
+  if(!key.startsWith('gsk_')){
+    toast('Invalid key — must start with gsk_. Get it free at console.groq.com');return;
+  }
   try{localStorage.setItem('groq_key',key);}catch(e){}
-  document.getElementById('premium-modal').classList.remove('open');
-  toast('✅ Groq key saved! AI features unlocked.');
+  closePremiumModal();
+  toast('✅ AI connected! All premium features are now unlocked.');
+  renderPlanner();
 }
 
 // Show premium badge in settings if premium
+
+function saveGroqKeyFromSettings(){
+  const key=(document.getElementById('settings-groq-key')?.value||'').trim();
+  if(!key.startsWith('gsk_')){toast('Invalid key — must start with gsk_');return;}
+  try{localStorage.setItem('groq_key',key);}catch(e){}
+  document.getElementById('settings-groq-key').value='';
+  renderPremiumBadge();
+  renderSettings();
+  toast('✅ Groq API key saved!');
+}
 function renderPremiumBadge(){
   const existing=document.getElementById('premium-status-badge');
   if(!existing) return;
-  existing.innerHTML=isPremiumUser()
-    ?'<span style="color:var(--gold);font-weight:700;">⭐ Premium Active</span>'
-    :'<button class="btn btn-primary btn-sm" onclick="openPremiumModal()">⭐ Upgrade to Premium</button>';
+  if(isPremiumUser()){
+    existing.innerHTML='<span style="color:var(--gold);font-weight:700;">⭐ Premium Active</span>';
+  } else if(state.isPremium && !hasGroqKey()){
+    // Paid but not connected yet
+    existing.innerHTML='<button class="btn btn-teal btn-sm" onclick="openPremiumModal()">🔗 Connect Groq Key</button>';
+  } else {
+    existing.innerHTML='<button class="btn btn-primary btn-sm" onclick="openPremiumModal()">⭐ Activate Premium</button>';
+  }
+  // Show/hide Groq key section in settings
+  const groqSection=document.getElementById('settings-groq-section');
+  if(groqSection) groqSection.style.display=state.isPremium?'block':'none';
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2866,7 +2958,46 @@ function initChat(){
   if(msgs) msgs.scrollTop = msgs.scrollHeight;
 }
 
+function buildStatsContext(){
+  // Build a detailed stats summary for the chat
+  const weeks=state.menuHistory.length;
+  if(weeks===0) return 'No history yet — no stats to analyse.';
+
+  const umap={};
+  state.menuHistory.forEach(e=>Object.values(e.menu||{}).forEach(ids=>{
+    const arr=Array.isArray(ids)?ids:[ids];
+    arr.forEach(id=>{if(id)umap[id]=(umap[id]||0)+1;});
+  }));
+
+  const topMeals=Object.entries(umap).sort((a,b)=>b[1]-a[1]).slice(0,5)
+    .map(([id,cnt])=>{const m=state.meals.find(m=>m.id===id);return m?`${m.name} (${cnt}x)`:null;}).filter(Boolean);
+
+  const cc={};
+  state.meals.forEach(m=>m.categories.forEach(cid=>cc[cid]=(cc[cid]||0)+1));
+  const catDist=state.categories.map(c=>`${c.name}: ${cc[c.id]||0} meals`).join(', ');
+
+  const weekMeals=DAYS.flatMap(d=>(Array.isArray(state.currentMenu[d])?state.currentMenu[d]:[]))
+    .map(id=>state.meals.find(m=>m.id===id)?.name).filter(Boolean);
+
+  return `User stats summary:
+- Total accepted weekly menus: ${weeks}
+- Total meals in pool: ${state.meals.length}
+- This week's meals: ${weekMeals.join(', ')||'not set'}
+- Top 5 most used meals: ${topMeals.join(', ')||'none'}
+- Category distribution in pool: ${catDist||'none'}
+- Food categories: ${state.categories.map(c=>c.name).join(', ')||'none'}`;
+}
+
+function askAboutStats(){
+  if(!isPremiumUser()){openPremiumModal();return;}
+  const statsCtx=buildStatsContext();
+  const prompt='Please analyse my stats and insights and give me personalised feedback about my meal patterns, variety, and any nutritional observations you can make from this data:\n\n'+statsCtx;
+  showPanel('chat');
+  setTimeout(()=>sendSuggestion(prompt),300);
+}
+
 function buildChatContext(){
+  const stats = buildStatsContext();
   const cats = state.categories.map(c=>c.name).join(', ');
   const poolNames = state.meals.map(m=>m.name).join(', ');
   const weekMeals = DAYS.map(d=>{
@@ -2877,6 +3008,8 @@ function buildChatContext(){
   const hist = state.menuHistory.length;
   const diet = state.activeDiet ? `Active diet plan: ${state.activeDiet.goal}.` : '';
   return `You are a friendly diet assistant embedded in "Mise en Place", a weekly meal planner app.
+
+${stats}
 
 User's meal pool (${state.meals.length} meals): ${poolNames || 'empty'}.
 Food categories: ${cats || 'none set'}.
